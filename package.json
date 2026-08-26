@@ -1,0 +1,37 @@
+{
+  "name": "edgewforce",
+  "version": "1.0.0",
+  "description": "EdgeWForce Enterprise Commercial Sales, Field Operations & Workforce Operating System",
+  "main": "server.js",
+  "type": "module",
+  "private": true,
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "start": "node server.js",
+    "server": "node server/src/index.js",
+    "build": "npm --workspace client run build",
+    "vercel-build": "npm --workspace client run build",
+    "postinstall": "npm --workspace client run build",
+    "dev": "npx --yes concurrently \"npm --workspace server run dev\" \"npm --workspace client run dev\"",
+    "test": "npm --workspace server test"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

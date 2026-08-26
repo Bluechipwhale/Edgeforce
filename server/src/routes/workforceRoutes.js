@@ -1,0 +1,48 @@
+// ==============================================================================
+// EDGEWFORCE - SHARED WORKFORCE DATA ROUTES
+// ==============================================================================
+
+import express from 'express';
+import { db } from '../config/database.js';
+import { requireAuth } from '../middleware/auth.js';
+
+const router = express.Router();
+
+router.get('/ranks', async (req, res) => {
+  try {
+    const ranks = await db.find('ranks', {}, { order: { column: 'level', ascending: true } });
+    res.json({ success: true, data: ranks, ranks });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+router.get('/announcements', async (req, res) => {
+  try {
+    const announcements = await db.find('announcements', {}, { order: { column: 'created_at', ascending: false } });
+    res.json({ success: true, data: announcements, announcements });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+router.get('/holidays', async (req, res) => {
+  try {
+    const holidays = await db.find('holidays', {}, { order: { column: 'date', ascending: true } });
+    res.json({ success: true, data: holidays, holidays });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+router.get('/notifications', requireAuth, async (req, res) => {
+  try {
+    const empId = req.user.employee?.id || req.user.id;
+    const notifications = await db.find('notifications', { employee_id: Number(empId) }, { order: { column: 'created_at', ascending: false } });
+    res.json({ success: true, data: notifications, notifications });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+export default router;
