@@ -606,4 +606,3 @@ INSERT INTO public.employee_location_assignments (company_id, employee_id, locat
 (1, 8, 1, 'primary', TRUE, TRUE),
 (1, 9, 1, 'primary', TRUE, TRUE)
 ON CONFLICT DO NOTHING;
-ON CONFLICT DO NOTHING;
