@@ -15,6 +15,7 @@ import ExecutiveDashboard from './dashboards/ExecutiveDashboard';
 import AccountingDashboard from './dashboards/AccountingDashboard';
 import ITAdminDashboard from './dashboards/ITAdminDashboard';
 import LoginPage from './pages/LoginPage';
+import FirstLoginPasswordModal from './components/employee/FirstLoginPasswordModal';
 import {
   LandingPage,
   AboutPage,
@@ -189,15 +190,26 @@ export default function App() {
   };
 
   return (
-    <Shell
-      user={user}
-      dark={dark}
-      onToggleTheme={handleToggleTheme}
-      onLogout={handleLogout}
-      currentTab={currentTab}
-      onSelectTab={setCurrentTab}
-    >
-      {renderDashboard()}
-    </Shell>
+    <>
+      <Shell
+        user={user}
+        dark={dark}
+        onToggleTheme={handleToggleTheme}
+        onLogout={handleLogout}
+        currentTab={currentTab}
+        onSelectTab={setCurrentTab}
+      >
+        {renderDashboard()}
+      </Shell>
+
+      {/* First-Login Mandatory Password Change Enforcement Modal */}
+      <FirstLoginPasswordModal
+        user={user}
+        isOpen={Boolean(user?.requires_password_change)}
+        onPasswordChanged={(updatedUser) => {
+          setUser(updatedUser);
+        }}
+      />
+    </>
   );
 }

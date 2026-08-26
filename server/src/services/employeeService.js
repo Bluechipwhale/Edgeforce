@@ -14,6 +14,23 @@ const FACE_MATCH_THRESHOLD = Number(process.env.FACE_MATCH_THRESHOLD || 0.80);
 
 export const employeeService = {
   /**
+   * Retrieves full profile for the authenticated employee (own record access only).
+   */
+  async getProfile(userId) {
+    const user = await db.findById('users', userId);
+    if (!user) throw new Error('User not found');
+    const employee = await db.findOne('employees', { user_id: user.id });
+    if (!employee) throw new Error('Employee profile not found');
+    const rank = employee.rank_code ? await db.findOne('ranks', { code: employee.rank_code }) : null;
+    return {
+      ...employee,
+      rank,
+      email: user.email,
+      user_status: user.status
+    };
+  },
+
+  /**
    * Retrieves summary data for employee home workspace.
    */
   async getDashboard(employeeId) {

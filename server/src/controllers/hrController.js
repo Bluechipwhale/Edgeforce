@@ -47,6 +47,34 @@ export const hrController = {
     }
   },
 
+  async updateStaffStatus(req, res) {
+    try {
+      const { status } = req.body;
+      const updated = await hrService.updateStaffStatus(req.params.id, status, req.user, req);
+      res.json({ success: true, data: updated, ...updated, message: `Staff status updated to ${status}.` });
+    } catch (err) {
+      res.status(400).json({ success: false, error: { message: err.message } });
+    }
+  },
+
+  async resendInvitation(req, res) {
+    try {
+      const result = await hrService.resendInvitation(req.params.id, req.user, req);
+      res.json({ success: true, ...result });
+    } catch (err) {
+      res.status(400).json({ success: false, error: { message: err.message } });
+    }
+  },
+
+  async getAuditLogs(req, res) {
+    try {
+      const logs = await hrService.getAuditLogs();
+      res.json({ success: true, data: logs, audit_logs: logs });
+    } catch (err) {
+      res.status(500).json({ success: false, error: { message: err.message } });
+    }
+  },
+
   async getAttendance(req, res) {
     try {
       const attendance = await db.find('attendance', {}, { order: { column: 'date', ascending: false } });

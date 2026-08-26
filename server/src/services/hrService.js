@@ -63,15 +63,23 @@ export const hrService = {
 
   /**
    * Retrieves employee directory with rank and department relational data.
-   * Redacts base_salary and allowance figures for any non-HR / non-CEO users.
+   * Redacts sensitive personal and financial data for any non-HR / non-Admin users.
    */
   async getEmployees(actor = null) {
-    const isHrOrCeo = actor && (
+    const isHrOrAdmin = actor && (
       actor.role_code === 'HR' ||
       actor.role_code === 'HR_MANAGER' ||
+      actor.role_code === 'SUPER_ADMIN' ||
+      actor.role_code === 'ADMIN' ||
+      actor.role_code === 'IT_ADMIN' ||
       actor.role_code === 'CEO' ||
+      actor.role_code === 'CTO' ||
       actor.rank?.code === 'CEO' ||
+      actor.rank?.code === 'CTO' ||
       actor.rank?.code === 'HR' ||
+      actor.rank?.code === 'IT_ADMIN' ||
+      actor.email === 'admin@edgewforce.com' ||
+      actor.email === 'it@edgewforce.com' ||
       actor.email === 'ceo@edgewforce.com' ||
       actor.email === 'hr@edgewforce.com'
     );
@@ -87,45 +95,162 @@ export const hrService = {
       const user = users.find(u => Number(u.id) === Number(e.user_id));
 
       const sanitizedEmp = { ...e };
-      if (!isHrOrCeo) {
+      
+      // If caller is NOT authorized HR/Admin, strip ALL private and sensitive information!
+      if (!isHrOrAdmin) {
+        delete sanitizedEmp.date_of_birth;
+        delete sanitizedEmp.marital_status;
+        delete sanitizedEmp.address;
+        delete sanitizedEmp.home_address;
+        delete sanitizedEmp.personal_email;
+        delete sanitizedEmp.emergency_contact_name;
+        delete sanitizedEmp.emergency_contact_relationship;
+        delete sanitizedEmp.emergency_contact_phone;
+        delete sanitizedEmp.blood_group;
+        delete sanitizedEmp.bank_name;
+        delete sanitizedEmp.account_number;
         delete sanitizedEmp.base_salary;
         delete sanitizedEmp.housing_allowance;
         delete sanitizedEmp.transport_allowance;
         delete sanitizedEmp.other_allowance;
+        delete sanitizedEmp.review_reason;
+        delete sanitizedEmp.flagged_for_review;
+        delete sanitizedEmp.performance_score;
       }
 
       return {
         ...sanitizedEmp,
         rank,
         department_info: department,
-        user_status: user?.status || 'active',
-        email: user?.email || ''
+        user_status: user?.status || sanitizedEmp.status || 'active',
+        email: user?.email || sanitizedEmp.work_email || sanitizedEmp.personal_email || ''
       };
     });
   },
 
   /**
-   * Updates an employee profile and rank.
+   * Updates an employee profile and rank with detailed audit logging.
    */
   async updateEmployee(employeeId, data, actor = null, req = null) {
     const employee = await db.findById('employees', employeeId);
     if (!employee) throw new Error('Employee not found');
 
-    const updated = await db.update('employees', employee.id, {
-      first_name: data.first_name || employee.first_name,
-      last_name: data.last_name || employee.last_name,
-      phone: data.phone || employee.phone,
-      department: data.department || employee.department,
-      position: data.position || employee.position,
-      rank_code: data.rank_code || employee.rank_code,
-      base_salary: data.base_salary ? Number(data.base_salary) : employee.base_salary,
-      housing_allowance: data.housing_allowance ? Number(data.housing_allowance) : employee.housing_allowance,
-      transport_allowance: data.transport_allowance ? Number(data.transport_allowance) : employee.transport_allowance,
-      reporting_manager_id: data.reporting_manager_id ? Number(data.reporting_manager_id) : employee.reporting_manager_id
+    const payload = {
+      first_name: data.first_name !== undefined ? data.first_name : employee.first_name,
+      last_name: data.last_name !== undefined ? data.last_name : employee.last_name,
+      full_name: data.full_name || (data.first_name && data.last_name ? `${data.first_name} ${data.last_name}` : employee.full_name),
+      phone: data.phone !== undefined ? data.phone : employee.phone,
+      personal_email: data.personal_email !== undefined ? data.personal_email : employee.personal_email,
+      work_email: data.work_email !== undefined ? data.work_email : employee.work_email,
+      date_of_birth: data.date_of_birth !== undefined ? data.date_of_birth : employee.date_of_birth,
+      marital_status: data.marital_status !== undefined ? data.marital_status : employee.marital_status,
+      nationality: data.nationality !== undefined ? data.nationality : employee.nationality,
+      address: data.address !== undefined ? data.address : employee.address,
+      home_address: data.home_address !== undefined ? data.home_address : employee.home_address,
+      city_lga: data.city_lga !== undefined ? data.city_lga : employee.city_lga,
+      state_of_origin: data.state_of_origin !== undefined ? data.state_of_origin : employee.state_of_origin,
+      state_of_residence: data.state_of_residence !== undefined ? data.state_of_residence : employee.state_of_residence,
+      landmark: data.landmark !== undefined ? data.landmark : employee.landmark,
+      staff_id: data.staff_id !== undefined ? String(data.staff_id) : employee.staff_id,
+      department: data.department !== undefined ? data.department : employee.department,
+      department_id: data.department_id !== undefined ? Number(data.department_id) : employee.department_id,
+      position: data.position !== undefined ? data.position : (data.job_title !== undefined ? data.job_title : employee.position),
+      date_of_joining: data.date_of_joining !== undefined ? data.date_of_joining : employee.date_of_joining,
+      work_location: data.work_location !== undefined ? data.work_location : employee.work_location,
+      supervisor_name: data.supervisor_name !== undefined ? data.supervisor_name : employee.supervisor_name,
+      rank_code: data.rank_code !== undefined ? data.rank_code : employee.rank_code,
+      emergency_contact_name: data.emergency_contact_name !== undefined ? data.emergency_contact_name : employee.emergency_contact_name,
+      emergency_contact_relationship: data.emergency_contact_relationship !== undefined ? data.emergency_contact_relationship : employee.emergency_contact_relationship,
+      emergency_contact_phone: data.emergency_contact_phone !== undefined ? data.emergency_contact_phone : employee.emergency_contact_phone,
+      blood_group: data.blood_group !== undefined ? data.blood_group : employee.blood_group,
+      bank_name: data.bank_name !== undefined ? data.bank_name : employee.bank_name,
+      account_number: data.account_number !== undefined ? data.account_number : employee.account_number,
+      hobbies_interests: data.hobbies_interests !== undefined ? data.hobbies_interests : employee.hobbies_interests,
+      base_salary: data.base_salary !== undefined ? Number(data.base_salary) : employee.base_salary,
+      housing_allowance: data.housing_allowance !== undefined ? Number(data.housing_allowance) : employee.housing_allowance,
+      transport_allowance: data.transport_allowance !== undefined ? Number(data.transport_allowance) : employee.transport_allowance,
+      status: data.status !== undefined ? data.status : employee.status,
+      flagged_for_review: data.flagged_for_review !== undefined ? Boolean(data.flagged_for_review) : employee.flagged_for_review,
+      review_reason: data.review_reason !== undefined ? data.review_reason : employee.review_reason
+    };
+
+    const updated = await db.update('employees', employee.id, payload);
+
+    // Synchronize corresponding auth user if exists
+    if (employee.user_id) {
+      const userUpdates = {};
+      if (payload.full_name) userUpdates.full_name = payload.full_name;
+      if (payload.phone) userUpdates.phone = normalizePhone(payload.phone);
+      if (payload.work_email || payload.personal_email) userUpdates.email = payload.work_email || payload.personal_email;
+      if (payload.status) userUpdates.status = payload.status;
+      if (Object.keys(userUpdates).length > 0) {
+        await db.update('users', employee.user_id, userUpdates);
+      }
+    }
+
+    // Record granular audit trail of changes
+    const changes = {};
+    for (const [key, val] of Object.entries(payload)) {
+      if (String(employee[key]) !== String(val)) {
+        changes[key] = { old: employee[key], new: val };
+      }
+    }
+
+    await recordAudit(actor, 'EMPLOYEE_UPDATED', 'employees', employee.id, { changes, employee_id: employee.id }, req);
+    return updated;
+  },
+
+  /**
+   * Sets staff account status (active, suspended, deactivated).
+   */
+  async updateStaffStatus(employeeId, status, actor = null, req = null) {
+    const employee = await db.findById('employees', employeeId);
+    if (!employee) throw new Error('Employee not found');
+
+    const updatedEmp = await db.update('employees', employee.id, {
+      status,
+      onboarding_status: status === 'active' ? 'Active' : (status === 'suspended' ? 'Suspended' : 'Deactivated')
     });
 
-    await recordAudit(actor, 'EMPLOYEE_UPDATED', 'employees', employee.id, { changes: data }, req);
-    return updated;
+    if (employee.user_id) {
+      await db.update('users', employee.user_id, {
+        status: status === 'active' ? 'active' : 'suspended',
+        onboarding_status: status === 'active' ? 'Active' : (status === 'suspended' ? 'Suspended' : 'Deactivated')
+      });
+    }
+
+    await recordAudit(actor, 'STAFF_STATUS_CHANGED', 'employees', employee.id, { old_status: employee.status, new_status: status }, req);
+    return updatedEmp;
+  },
+
+  /**
+   * Triggers onboarding invitation / reset flow.
+   */
+  async resendInvitation(employeeId, actor = null, req = null) {
+    const employee = await db.findById('employees', employeeId);
+    if (!employee) throw new Error('Employee not found');
+
+    const updatedEmp = await db.update('employees', employee.id, {
+      onboarding_status: 'Invitation Pending',
+      invitation_sent_at: new Date().toISOString()
+    });
+
+    if (employee.user_id) {
+      await db.update('users', employee.user_id, {
+        onboarding_status: 'Invitation Pending',
+        requires_password_change: true
+      });
+    }
+
+    await recordAudit(actor, 'ONBOARDING_INVITATION_RESENT', 'employees', employee.id, { email: employee.work_email || employee.personal_email }, req);
+    return { success: true, message: `Onboarding process initiated for ${employee.first_name} ${employee.last_name}.` };
+  },
+
+  /**
+   * Retrieves audit logs for HR / Governance review.
+   */
+  async getAuditLogs() {
+    return db.find('audit_logs', {}, { order: { column: 'created_at', ascending: false }, limit: 100 });
   },
 
   /**

@@ -27,7 +27,11 @@ import {
   EyeOff,
   Lock,
   Building2,
-  MapPin
+  MapPin,
+  Search,
+  Filter,
+  ShieldCheck,
+  RefreshCw
 } from 'lucide-react';
 import StatCard from '../components/common/StatCard';
 import Modal from '../components/common/Modal';
@@ -36,6 +40,8 @@ import IdleReviewModal from '../components/hr/IdleReviewModal';
 import TaskAssignModal from '../components/hr/TaskAssignModal';
 import StateCitySelect from '../components/common/StateCitySelect';
 import LocationAssignmentDashboard from '../components/hr/LocationAssignmentDashboard';
+import StaffProfileDrawer from '../components/hr/StaffProfileDrawer';
+import StaffEditModal from '../components/hr/StaffEditModal';
 import { TodayTaskCenter } from '../components/tasks/TodayTaskCenter';
 import { TaskCreateModal } from '../components/tasks/TaskCreateModal';
 import { formatMoney, formatDate, formatTime } from '../lib/formatters';
@@ -65,6 +71,14 @@ export default function HRDashboard({ user, initialTab = 'overview' }) {
   const [ranks, setRanks] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   const [birthdaysData, setBirthdaysData] = useState({ all: [], thisMonth: [], upcoming: [] });
+  const [auditLogs, setAuditLogs] = useState([]);
+
+  // Staff Search & Filtering State
+  const [staffSearch, setStaffSearch] = useState('');
+  const [staffDeptFilter, setStaffDeptFilter] = useState('ALL');
+  const [staffStatusFilter, setStaffStatusFilter] = useState('ALL'); // ALL, active, suspended, flagged
+  const [selectedStaffForView, setSelectedStaffForView] = useState(null);
+  const [selectedStaffForEdit, setSelectedStaffForEdit] = useState(null);
 
   // Modals
   const [activeIdleAlert, setActiveIdleAlert] = useState(null);
@@ -129,7 +143,7 @@ export default function HRDashboard({ user, initialTab = 'overview' }) {
 
   const loadData = async () => {
     try {
-      const [st, emp, att, idl, lv, tsk, sos, org, rnk, ann, bdays, locs] = await Promise.all([
+      const [st, emp, att, idl, lv, tsk, sos, org, rnk, ann, bdays, locs, audits] = await Promise.all([
         api.get('/hr/dashboard').catch(() => null),
         api.get('/hr/employees').catch(() => []),
         api.get('/hr/attendance').catch(() => []),
@@ -141,7 +155,8 @@ export default function HRDashboard({ user, initialTab = 'overview' }) {
         api.get('/hr/ranks').catch(() => []),
         api.get('/hr/announcements').catch(() => ({ data: [] })),
         api.get('/hr/birthdays').catch(() => ({ all: [], thisMonth: [], upcoming: [] })),
-        api.get('/locations?status=active').catch(() => ({ data: [] }))
+        api.get('/locations?status=active').catch(() => ({ data: [] })),
+        api.get('/hr/audit-logs').catch(() => ({ data: [] }))
       ]);
 
       if (st) setStats(st);
@@ -156,6 +171,7 @@ export default function HRDashboard({ user, initialTab = 'overview' }) {
       setAnnouncements(Array.isArray(ann) ? ann : (ann?.data || ann?.announcements || []));
       setBirthdaysData(bdays?.data || bdays || { all: [], thisMonth: [], upcoming: [] });
       setAvailableLocations(Array.isArray(locs) ? locs : (locs?.data || locs?.locations || []));
+      setAuditLogs(Array.isArray(audits) ? audits : (audits?.audit_logs || audits?.data || []));
     } catch {
       // Graceful offline fallback
     }
@@ -202,6 +218,37 @@ export default function HRDashboard({ user, initialTab = 'overview' }) {
       loadData();
     } catch (err) {
       setStatusMsg(`Acknowledgement failed: ${err.message}`);
+    }
+  };
+
+  const handleUpdateStaffStatus = async (emp, status) => {
+    try {
+      await api.put(`/hr/employees/${emp.id}/status`, { status });
+      setStatusMsg(`Staff status updated to ${status}.`);
+      loadData();
+      if (selectedStaffForView?.id === emp.id) {
+        setSelectedStaffForView(prev => ({ ...prev, status }));
+      }
+    } catch (err) {
+      setStatusMsg(`Status update failed: ${err.message}`);
+    }
+  };
+
+  const handleResendInvitation = async (emp) => {
+    try {
+      const res = await api.post(`/hr/employees/${emp.id}/resend-invitation`, {});
+      setStatusMsg(res.message || 'Onboarding invitation resent.');
+      loadData();
+    } catch (err) {
+      setStatusMsg(`Failed to resend invitation: ${err.message}`);
+    }
+  };
+
+  const handleSaveEditedEmployee = (updated) => {
+    setStatusMsg('Staff record updated successfully.');
+    loadData();
+    if (selectedStaffForView?.id === updated?.id) {
+      setSelectedStaffForView(updated);
     }
   };
 
@@ -569,57 +616,278 @@ export default function HRDashboard({ user, initialTab = 'overview' }) {
         </div>
       )}
 
-      {/* TAB 2: STAFF DIRECTORY */}
+      {/* TAB 2: STAFF DIRECTORY & WORKFORCE MANAGEMENT */}
       {tab === 'people' && (
-        <div className="surface-card rounded-xl p-5 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-base font-extrabold text-zinc-900 dark:text-zinc-100">
-              Workforce Directory ({employees.length} Staff Members)
-            </h3>
-            <button
-              onClick={() => setRegisterModalOpen(true)}
-              className="btn-primary flex items-center gap-1.5 text-xs py-1.5 px-3 bg-orange-500 text-white rounded-lg font-bold"
+        <div className="space-y-4 animate-in fade-in duration-200">
+          
+          {/* Top Summary & Metrics */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+            <div 
+              onClick={() => setStaffStatusFilter('ALL')}
+              className={`p-4 rounded-xl border cursor-pointer transition ${
+                staffStatusFilter === 'ALL' ? 'border-orange-500 bg-orange-500/5 dark:bg-orange-500/10' : 'border-zinc-200 dark:border-zinc-800 surface-card'
+              }`}
             >
-              <UserPlus size={13} />
-              <span>+ Register New Staff</span>
-            </button>
+              <div className="text-[10px] font-bold uppercase text-zinc-400">Total Staff Headcount</div>
+              <div className="text-2xl font-black text-zinc-900 dark:text-zinc-50 mt-1">{employees.length}</div>
+              <div className="text-[11px] text-zinc-500 mt-0.5">Authoritative records</div>
+            </div>
+
+            <div 
+              onClick={() => setStaffStatusFilter('flagged')}
+              className={`p-4 rounded-xl border cursor-pointer transition ${
+                staffStatusFilter === 'flagged' ? 'border-amber-500 bg-amber-500/10' : 'border-zinc-200 dark:border-zinc-800 surface-card'
+              }`}
+            >
+              <div className="text-[10px] font-bold uppercase text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                <AlertTriangle size={12} />
+                <span>Flagged for HR Review</span>
+              </div>
+              <div className="text-2xl font-black text-amber-600 dark:text-amber-400 mt-1">
+                {employees.filter(e => e.flagged_for_review).length}
+              </div>
+              <div className="text-[11px] text-amber-600/80 mt-0.5">Click to filter missing IDs/data</div>
+            </div>
+
+            <div 
+              onClick={() => setStaffStatusFilter('active')}
+              className={`p-4 rounded-xl border cursor-pointer transition ${
+                staffStatusFilter === 'active' ? 'border-emerald-500 bg-emerald-500/10' : 'border-zinc-200 dark:border-zinc-800 surface-card'
+              }`}
+            >
+              <div className="text-[10px] font-bold uppercase text-emerald-600 dark:text-emerald-400">Active Accounts</div>
+              <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">
+                {employees.filter(e => e.status === 'active').length}
+              </div>
+              <div className="text-[11px] text-zinc-500 mt-0.5">Provisioned & operational</div>
+            </div>
+
+            <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 surface-card">
+              <div className="text-[10px] font-bold uppercase text-zinc-400">Pending Onboarding</div>
+              <div className="text-2xl font-black text-blue-600 dark:text-blue-400 mt-1">
+                {employees.filter(e => !e.first_login_at).length}
+              </div>
+              <div className="text-[11px] text-zinc-500 mt-0.5">Awaiting first sign-in</div>
+            </div>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left">
-              <thead>
-                <tr className="border-b border-zinc-200 dark:border-zinc-800 text-zinc-400 font-bold uppercase text-[10px]">
-                  <th className="pb-2">Code</th>
-                  <th className="pb-2">Employee Name</th>
-                  <th className="pb-2">Department</th>
-                  <th className="pb-2">Position</th>
-                  <th className="pb-2">Rank Level</th>
-                  {isHrOrCeo && <th className="pb-2">Base Salary</th>}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-200/60 dark:divide-zinc-800/60">
-                {employees.map((emp) => (
-                  <tr key={emp.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-                    <td className="py-3 font-mono font-bold">{emp.employee_code}</td>
-                    <td className="py-3 font-bold text-zinc-900 dark:text-zinc-100">
-                      {emp.first_name} {emp.last_name}
-                    </td>
-                    <td className="py-3">{emp.department}</td>
-                    <td className="py-3">{emp.position}</td>
-                    <td className="py-3">
-                      <span className="font-bold px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 text-[10px]">
-                        {emp.rank?.name || emp.rank_code} (L{emp.rank?.level || 8})
-                      </span>
-                    </td>
-                    {isHrOrCeo && (
-                      <td className="py-3 font-bold text-zinc-900 dark:text-zinc-100">
-                        {emp.base_salary ? formatMoney(emp.base_salary) : '—'}
-                      </td>
-                    )}
-                  </tr>
+
+          {/* Search, Filter Toolbar & Actions */}
+          <div className="surface-card rounded-2xl p-4 border border-zinc-200 dark:border-zinc-800 flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2.5 flex-1">
+              <div className="relative flex-1 min-w-[240px]">
+                <Search size={14} className="absolute left-3 top-3 text-zinc-400" />
+                <input
+                  type="text"
+                  placeholder="Search by Name, Staff ID (e.g. 019), Email, Position, Supervisor..."
+                  value={staffSearch}
+                  onChange={(e) => setStaffSearch(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-xs outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+
+              {/* Department Filter */}
+              <select
+                value={staffDeptFilter}
+                onChange={(e) => setStaffDeptFilter(e.target.value)}
+                className="px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-xs outline-none focus:ring-2 focus:ring-orange-500 font-medium"
+              >
+                <option value="ALL">All Departments ({employees.length})</option>
+                {[...new Set(employees.map(e => e.department).filter(Boolean))].map(d => (
+                  <option key={d} value={d}>{d}</option>
                 ))}
-              </tbody>
-            </table>
+              </select>
+
+              {/* Status Filter */}
+              <select
+                value={staffStatusFilter}
+                onChange={(e) => setStaffStatusFilter(e.target.value)}
+                className="px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-xs outline-none focus:ring-2 focus:ring-orange-500 font-medium"
+              >
+                <option value="ALL">All Account Statuses</option>
+                <option value="active">Active Only</option>
+                <option value="flagged">Flagged for Review Only</option>
+                <option value="suspended">Suspended Only</option>
+              </select>
+
+              {(staffSearch || staffDeptFilter !== 'ALL' || staffStatusFilter !== 'ALL') && (
+                <button
+                  onClick={() => { setStaffSearch(''); setStaffDeptFilter('ALL'); setStaffStatusFilter('ALL'); }}
+                  className="px-2.5 py-1.5 text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 font-bold"
+                >
+                  Reset Filters
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={loadData}
+                title="Refresh Directory"
+                className="p-2 rounded-xl border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300"
+              >
+                <RefreshCw size={14} />
+              </button>
+              <button
+                onClick={() => setRegisterModalOpen(true)}
+                className="btn-primary flex items-center gap-1.5 text-xs py-2 px-3.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold shadow-md shadow-orange-500/20"
+              >
+                <UserPlus size={14} />
+                <span>Register Staff</span>
+              </button>
+            </div>
           </div>
+
+          {/* Directory Table View */}
+          <div className="surface-card rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-xs">
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-left">
+                <thead>
+                  <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/50 text-zinc-400 font-bold uppercase text-[10px]">
+                    <th className="py-3 px-4">Staff ID</th>
+                    <th className="py-3 px-4">Employee</th>
+                    <th className="py-3 px-4">Role & Department</th>
+                    <th className="py-3 px-4">Contact Info</th>
+                    <th className="py-3 px-4">Location & Supervisor</th>
+                    <th className="py-3 px-4">Status & Review</th>
+                    <th className="py-3 px-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
+                  {employees
+                    .filter(emp => {
+                      const term = staffSearch.toLowerCase().trim();
+                      const name = (emp.full_name || `${emp.first_name || ''} ${emp.last_name || ''}`).toLowerCase();
+                      const staffId = String(emp.staff_id || emp.employee_code || '').toLowerCase();
+                      const position = String(emp.position || '').toLowerCase();
+                      const dept = String(emp.department || '').toLowerCase();
+                      const email = String(emp.work_email || emp.personal_email || emp.email || '').toLowerCase();
+                      const phone = String(emp.phone || '').toLowerCase();
+                      const supervisor = String(emp.supervisor_name || '').toLowerCase();
+                      const location = String(emp.work_location || '').toLowerCase();
+
+                      const matchesSearch = !term ||
+                        name.includes(term) ||
+                        staffId.includes(term) ||
+                        position.includes(term) ||
+                        dept.includes(term) ||
+                        email.includes(term) ||
+                        phone.includes(term) ||
+                        supervisor.includes(term) ||
+                        location.includes(term);
+
+                      const matchesDept = staffDeptFilter === 'ALL' || emp.department === staffDeptFilter;
+                      const matchesStatus =
+                        staffStatusFilter === 'ALL' ||
+                        (staffStatusFilter === 'flagged' && emp.flagged_for_review) ||
+                        (staffStatusFilter === 'active' && emp.status === 'active') ||
+                        (staffStatusFilter === 'suspended' && emp.status === 'suspended');
+
+                      return matchesSearch && matchesDept && matchesStatus;
+                    })
+                    .map((emp) => (
+                      <tr key={emp.id} className="hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40 transition">
+                        
+                        {/* Staff ID */}
+                        <td className="py-3.5 px-4 font-mono">
+                          {emp.staff_id ? (
+                            <span className="px-2 py-1 rounded font-bold text-xs bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20">
+                              {emp.staff_id}
+                            </span>
+                          ) : (
+                            <span className="text-zinc-400 text-[11px] italic font-mono">
+                              {emp.employee_code}
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Employee Name & Code */}
+                        <td className="py-3.5 px-4">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-orange-500 to-amber-500 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
+                              {emp.first_name?.[0] || emp.full_name?.[0] || 'U'}
+                            </div>
+                            <div>
+                              <div className="font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                                <span>{emp.full_name || `${emp.first_name} ${emp.last_name}`}</span>
+                                {emp.flagged_for_review && (
+                                  <AlertTriangle size={12} className="text-amber-500" title="Flagged for HR Review" />
+                                )}
+                              </div>
+                              <div className="text-[10px] font-mono text-zinc-400">
+                                {emp.employee_code}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Role & Department */}
+                        <td className="py-3.5 px-4">
+                          <div className="font-semibold text-zinc-800 dark:text-zinc-200">{emp.position || 'Staff Member'}</div>
+                          <div className="text-[11px] text-zinc-500 dark:text-zinc-400">{emp.department || 'Operations'}</div>
+                        </td>
+
+                        {/* Contact */}
+                        <td className="py-3.5 px-4">
+                          <div className="text-zinc-900 dark:text-zinc-100 truncate max-w-[180px]" title={emp.work_email || emp.personal_email}>
+                            {emp.work_email || emp.personal_email || emp.email || '—'}
+                          </div>
+                          <div className="text-[11px] font-mono text-zinc-500 mt-0.5">
+                            {emp.phone || '—'}
+                          </div>
+                        </td>
+
+                        {/* Location & Supervisor */}
+                        <td className="py-3.5 px-4">
+                          <div className="text-zinc-800 dark:text-zinc-200 truncate max-w-[140px]" title={emp.work_location}>
+                            {emp.work_location || 'Headquarters'}
+                          </div>
+                          <div className="text-[10px] text-zinc-400 truncate max-w-[140px]" title={emp.supervisor_name}>
+                            Mgr: {emp.supervisor_name || 'MD'}
+                          </div>
+                        </td>
+
+                        {/* Status & Review */}
+                        <td className="py-3.5 px-4">
+                          <div className="flex flex-col gap-1">
+                            <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] w-fit ${
+                              emp.status === 'active' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-rose-500/10 text-rose-600'
+                            }`}>
+                              {emp.status?.toUpperCase() || 'ACTIVE'}
+                            </span>
+                            {emp.flagged_for_review && (
+                              <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded w-fit">
+                                Review Flagged
+                              </span>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Actions */}
+                        <td className="py-3.5 px-4 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => setSelectedStaffForView(emp)}
+                              className="px-2.5 py-1.5 text-[11px] font-bold text-zinc-700 dark:text-zinc-300 hover:text-orange-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition"
+                            >
+                              View Profile
+                            </button>
+                            <button
+                              onClick={() => setSelectedStaffForEdit(emp)}
+                              className="p-1.5 text-zinc-400 hover:text-orange-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition"
+                              title="Edit Staff Record"
+                            >
+                              <Edit3 size={13} />
+                            </button>
+                          </div>
+                        </td>
+
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
         </div>
       )}
 
@@ -1574,6 +1842,30 @@ export default function HRDashboard({ user, initialTab = 'overview' }) {
         isOpen={taskModalOpen}
         onClose={() => setTaskModalOpen(false)}
         onCreated={loadData}
+      />
+
+      {/* Staff 8-Section Profile Drawer */}
+      <StaffProfileDrawer
+        employee={selectedStaffForView}
+        isOpen={Boolean(selectedStaffForView)}
+        onClose={() => setSelectedStaffForView(null)}
+        onEdit={(emp) => {
+          setSelectedStaffForView(null);
+          setSelectedStaffForEdit(emp);
+        }}
+        onStatusChange={handleUpdateStaffStatus}
+        onResendInvitation={handleResendInvitation}
+        auditLogs={auditLogs}
+      />
+
+      {/* Staff Edit Modal */}
+      <StaffEditModal
+        employee={selectedStaffForEdit}
+        isOpen={Boolean(selectedStaffForEdit)}
+        onClose={() => setSelectedStaffForEdit(null)}
+        onSaved={handleSaveEditedEmployee}
+        ranks={ranks}
+        departments={[...new Set(employees.map(e => e.department).filter(Boolean))]}
       />
     </div>
   );

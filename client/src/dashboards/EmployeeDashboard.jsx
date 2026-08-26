@@ -24,6 +24,8 @@ import { TodayTaskCenter } from '../components/tasks/TodayTaskCenter';
 import { TaskCreateModal } from '../components/tasks/TaskCreateModal';
 import { DailyReminderPrompt } from '../components/tasks/DailyReminderPrompt';
 import GeoLocationReportView from '../components/field/GeoLocationReportView';
+import EmployeeProfileView from '../components/employee/EmployeeProfileView';
+import PublicStaffDirectoryView from '../components/employee/PublicStaffDirectoryView';
 import { formatMoney, formatDate, formatTime } from '../lib/formatters';
 import { getCurrentGPSLocation } from '../lib/geo';
 import { api } from '../lib/api';
@@ -175,6 +177,8 @@ export default function EmployeeDashboard({ user }) {
       <div className="flex gap-1.5 overflow-x-auto pb-1 border-b border-zinc-200 dark:border-zinc-800">
         {[
           ['dashboard', 'Dashboard'],
+          ['profile', 'My Staff Profile'],
+          ['directory', 'Staff Directory'],
           ['attendance', 'Timesheet & Attendance'],
           ['leave', 'Leave Management'],
           ['payslip', 'Compensation & Payslips'],
@@ -369,6 +373,16 @@ export default function EmployeeDashboard({ user }) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* TAB: MY STAFF PROFILE */}
+      {tab === 'profile' && (
+        <EmployeeProfileView user={user} />
+      )}
+
+      {/* TAB: STAFF DIRECTORY */}
+      {tab === 'directory' && (
+        <PublicStaffDirectoryView />
       )}
 
       {/* TAB 2: TIMESHEET & ATTENDANCE */}

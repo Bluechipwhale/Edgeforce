@@ -24,13 +24,23 @@ export const authService = {
     if (isEmail(trimmedInput)) {
       const normalizedEmail = normalizeEmail(trimmedInput);
       user = await db.findOne('users', { email: normalizedEmail });
+      if (!user) {
+        const employees = await db.find('employees');
+        const emp = employees.find(e => 
+          (e.work_email && normalizeEmail(e.work_email) === normalizedEmail) ||
+          (e.personal_email && normalizeEmail(e.personal_email) === normalizedEmail)
+        );
+        if (emp?.user_id) {
+          user = await db.findById('users', emp.user_id);
+        }
+      }
     } else {
       const normalizedPhone = normalizePhone(trimmedInput);
       if (normalizedPhone) {
         user = await db.findOne('users', { phone: normalizedPhone });
         if (!user) {
-          // Check employee table
-          const emp = await db.findOne('employees', { phone: normalizedPhone });
+          const employees = await db.find('employees');
+          const emp = employees.find(e => normalizePhone(e.phone) === normalizedPhone);
           if (emp?.user_id) {
             user = await db.findById('users', emp.user_id);
           }
@@ -70,6 +80,8 @@ export const authService = {
       phone: user.phone,
       role_code: user.role_code,
       status: user.status,
+      requires_password_change: Boolean(user.requires_password_change),
+      onboarding_status: user.onboarding_status || 'Active',
       employee,
       rank,
       department
@@ -101,6 +113,8 @@ export const authService = {
       phone: user.phone,
       role_code: user.role_code,
       status: user.status,
+      requires_password_change: Boolean(user.requires_password_change),
+      onboarding_status: user.onboarding_status || 'Active',
       employee,
       rank,
       department

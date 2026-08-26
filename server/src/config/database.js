@@ -230,17 +230,17 @@ function loadPersistedStore() {
       const data = fs.readFileSync(storePath, 'utf8');
       const loaded = JSON.parse(data);
       store = { ...initialSeed, ...loaded };
-      store.companies = initialSeed.companies;
-      store.company_settings = initialSeed.company_settings;
-      store.regions = initialSeed.regions;
-      store.territories = initialSeed.territories;
-      store.departments = initialSeed.departments;
-      store.ranks = initialSeed.ranks;
-      store.permissions = initialSeed.permissions;
-      store.users = initialSeed.users;
-      store.employees = initialSeed.employees;
+      store.companies = loaded.companies?.length ? loaded.companies : initialSeed.companies;
+      store.company_settings = loaded.company_settings?.length ? loaded.company_settings : initialSeed.company_settings;
+      store.regions = loaded.regions?.length ? loaded.regions : initialSeed.regions;
+      store.territories = loaded.territories?.length ? loaded.territories : initialSeed.territories;
+      store.departments = loaded.departments?.length ? loaded.departments : initialSeed.departments;
+      store.ranks = loaded.ranks?.length ? loaded.ranks : initialSeed.ranks;
+      store.permissions = loaded.permissions?.length ? loaded.permissions : initialSeed.permissions;
+      store.users = loaded.users?.length ? loaded.users : initialSeed.users;
+      store.employees = loaded.employees?.length ? loaded.employees : initialSeed.employees;
     } else {
-      savePersistedStore();
+      savePersistedStoreSync();
     }
   } catch (err) {
     logger.error('Failed to load local store file, resetting to clean baseline', err);
@@ -248,19 +248,20 @@ function loadPersistedStore() {
   }
 }
 
-let saveTimeout = null;
+function savePersistedStoreSync() {
+  try {
+    fs.writeFileSync(storePath, JSON.stringify(store, null, 2), 'utf8');
+  } catch (err) {
+    logger.error('Failed to persist store synchronously', err);
+  }
+}
 
 function savePersistedStore() {
-  if (saveTimeout) clearTimeout(saveTimeout);
-  saveTimeout = setTimeout(() => {
-    try {
-      fs.writeFile(storePath, JSON.stringify(store, null, 2), 'utf8', (err) => {
-        if (err) logger.error('Failed to persist store to disk asynchronously', err);
-      });
-    } catch (err) {
-      logger.error('Failed to schedule store persistence', err);
-    }
-  }, 100);
+  try {
+    fs.writeFileSync(storePath, JSON.stringify(store, null, 2), 'utf8');
+  } catch (err) {
+    logger.error('Failed to persist store', err);
+  }
 }
 
 loadPersistedStore();

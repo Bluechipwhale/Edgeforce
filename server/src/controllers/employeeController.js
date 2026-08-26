@@ -15,6 +15,15 @@ export const employeeController = {
     }
   },
 
+  async getProfile(req, res) {
+    try {
+      const profile = await employeeService.getProfile(req.user.id);
+      res.json({ success: true, data: profile, profile });
+    } catch (err) {
+      res.status(404).json({ success: false, error: { message: err.message } });
+    }
+  },
+
   async getAttendance(req, res) {
     try {
       const empId = req.user.employee?.id || req.user.id;

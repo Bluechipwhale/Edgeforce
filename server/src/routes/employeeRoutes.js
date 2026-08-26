@@ -11,6 +11,7 @@ const router = express.Router();
 router.use(requireAuth);
 
 router.get('/dashboard', employeeController.getDashboard);
+router.get('/profile', employeeController.getProfile);
 router.get('/attendance', employeeController.getAttendance);
 router.post('/attendance/clock', employeeController.clockAttendance);
 router.post('/face/verify', employeeController.verifyFaceBiometric);
