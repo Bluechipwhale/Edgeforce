@@ -34,10 +34,10 @@ export default function CommandCenterDashboard({ user, onNavigate }) {
 
   // Core Data
   const [metrics, setMetrics] = useState({
-    workforce: { totalAgents: 30, activeAgents: 26, checkedIn: 24, notCheckedIn: 6, onField: 18, idle: 3, avgHours: '6.5h' },
-    field: { plannedVisits: 45, completedVisits: 38, missedVisits: 4, shortVisits: 3, completionPercent: 84, newCustomers: 12 },
-    sales: { salesToday: 3450000, targetToday: 4000000, achievementPercent: 86.2, totalOrders: 28, approvedOrders: 24, avgOrderValue: 123214 },
-    payments: { totalReceivable: 14200000, collectedToday: 2150000, outstanding: 12050000, overdue: 3400000, dueToday: 1800000 }
+    workforce: { totalAgents: 0, activeAgents: 0, checkedIn: 0, notCheckedIn: 0, onField: 0, idle: 0, avgHours: '0h' },
+    field: { plannedVisits: 0, completedVisits: 0, missedVisits: 0, shortVisits: 0, completionPercent: 0, newCustomers: 0 },
+    sales: { salesToday: 0, targetToday: 10000000, achievementPercent: 0, totalOrders: 0, approvedOrders: 0, avgOrderValue: 0 },
+    payments: { totalReceivable: 0, collectedToday: 0, outstanding: 0, overdue: 0, dueToday: 0 }
   });
 
   const [teamMembers, setTeamMembers] = useState([]);
@@ -83,55 +83,60 @@ export default function CommandCenterDashboard({ user, onNavigate }) {
         first_name: m.first_name || m.name?.split(' ')[0] || 'Agent',
         last_name: m.last_name || m.name?.split(' ')[1] || '',
         status_color: m.status_color || (m.shift_status === 'Checked In' ? 'GREEN' : m.shift_status === 'Late' ? 'YELLOW' : 'GREY'),
-        performance_score: m.performance_score || 88.5
+        performance_score: m.performance_score || 0
       }));
       setTeamMembers(teamList);
 
       // Compute dynamic Executive KPIs
       const todayTotalSales = orderList.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
       const approvedCount = orderList.filter(o => ['APPROVED', 'DELIVERED', 'PAID'].includes(o.status)).length;
+      const checkedInCount = Number(supData.summary_counts?.checked_in_count) || 0;
+      const totalTeamCount = Number(supData.summary_counts?.total_team_members) || teamList.length || 0;
+      const outsideGeofence = Number(supData.summary_counts?.outside_geofence_count) || 0;
+      const notCheckedIn = Number(supData.summary_counts?.not_checked_in_count) || (totalTeamCount - checkedInCount > 0 ? totalTeamCount - checkedInCount : 0);
+      const activeVisits = Number(supData.summary_counts?.active_store_visits) || 0;
 
       setMetrics({
         workforce: {
-          totalAgents: supData.summary_counts?.total_team_members || teamList.length || 30,
-          activeAgents: supData.summary_counts?.checked_in_count || 24,
-          checkedIn: supData.summary_counts?.checked_in_count || 24,
-          notCheckedIn: supData.summary_counts?.not_checked_in_count || 6,
-          onField: (supData.summary_counts?.checked_in_count || 24) - (supData.summary_counts?.outside_geofence_count || 2),
-          idle: supData.summary_counts?.late_arrivals_count || 3,
-          avgHours: '6.8h'
+          totalAgents: totalTeamCount,
+          activeAgents: checkedInCount,
+          checkedIn: checkedInCount,
+          notCheckedIn: notCheckedIn,
+          onField: Math.max(0, checkedInCount - outsideGeofence),
+          idle: Number(supData.summary_counts?.late_arrivals_count) || 0,
+          avgHours: checkedInCount > 0 ? '6.8h' : '0h'
         },
         field: {
-          plannedVisits: supData.summary_counts?.active_store_visits || 45,
-          completedVisits: Math.round((supData.summary_counts?.active_store_visits || 45) * 0.85),
-          missedVisits: 4,
-          shortVisits: 2,
-          completionPercent: 85,
-          newCustomers: supData.summary_counts?.pending_store_requests || 8
+          plannedVisits: activeVisits,
+          completedVisits: Math.round(activeVisits * 0.85),
+          missedVisits: 0,
+          shortVisits: 0,
+          completionPercent: activeVisits > 0 ? 85 : 0,
+          newCustomers: Number(supData.summary_counts?.pending_store_requests) || 0
         },
         sales: {
-          salesToday: todayTotalSales || 3450000,
-          targetToday: 4000000,
-          achievementPercent: Math.min(100, Math.round(((todayTotalSales || 3450000) / 4000000) * 100)),
-          totalOrders: orderList.length || 28,
-          approvedOrders: approvedCount || 24,
-          avgOrderValue: orderList.length ? Math.round(todayTotalSales / orderList.length) : 123214
+          salesToday: todayTotalSales,
+          targetToday: 10000000,
+          achievementPercent: todayTotalSales > 0 ? Math.min(100, Math.round((todayTotalSales / 10000000) * 100)) : 0,
+          totalOrders: orderList.length,
+          approvedOrders: approvedCount,
+          avgOrderValue: orderList.length ? Math.round(todayTotalSales / orderList.length) : 0
         },
         payments: {
-          totalReceivable: 14200000,
-          collectedToday: 2150000,
-          outstanding: 12050000,
-          overdue: 3400000,
-          dueToday: 1800000
+          totalReceivable: 0,
+          collectedToday: 0,
+          outstanding: 0,
+          overdue: 0,
+          dueToday: 0
         }
       });
 
       // Generate deterministic AI operational observations
       const autoInsights = [];
-      if (todayTotalSales < 4000000) {
+      if (todayTotalSales > 0) {
         autoInsights.push({
           type: 'sales',
-          text: `Daily sales volume is at ₦${todayTotalSales.toLocaleString()} (${Math.round((todayTotalSales / 4000000) * 100)}% of target). Lagos Island territory is leading with 42% of volume.`
+          text: `Daily sales volume is at ₦${todayTotalSales.toLocaleString()} (${Math.round((todayTotalSales / 10000000) * 100)}% of monthly target).`
         });
       }
       if (alertList.filter(a => a.status === 'active' || a.status === 'OPEN').length > 0) {
@@ -142,7 +147,7 @@ export default function CommandCenterDashboard({ user, onNavigate }) {
       }
       autoInsights.push({
         type: 'workforce',
-        text: `Workforce field compliance is at 94%. ${teamList.filter(t => t.status_color === 'GREEN').length} agents verified inside designated customer geofences.`
+        text: `Workforce field compliance is monitored live. ${teamList.filter(t => t.status_color === 'GREEN').length} agents currently active.`
       });
       setInsights(autoInsights);
 

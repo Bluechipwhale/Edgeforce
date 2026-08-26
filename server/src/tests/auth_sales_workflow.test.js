@@ -12,8 +12,95 @@ import { employeeService } from '../services/employeeService.js';
 import { hrService } from '../services/hrService.js';
 
 test('EdgeWForce Core Workflow Tests', async (t) => {
-  // Reset store to known state
+  // Reset store to clean state
   db.resetToSeed();
+
+  // Setup test fixtures for isolated workflow testing
+  await db.insert('customers', {
+    id: 1,
+    company_id: 1,
+    code: 'CUST-1001',
+    name: 'Mega Plaza Supermarket',
+    customer_type: 'Retail',
+    tier: 'Tier 1',
+    address: '14B Idowu Martins St, Victoria Island, Lagos',
+    latitude: 6.4281,
+    longitude: 3.4219,
+    geofence_radius: 150,
+    credit_limit: 800000,
+    balance: 150000,
+    status: 'active'
+  });
+
+  await db.insert('products', {
+    id: 1,
+    company_id: 1,
+    sku: 'SKU-1001',
+    name: 'Golden Penny Pure Vegetable Oil (1L x 12)',
+    category: 'Cooking Essentials',
+    price: 48500,
+    cost_price: 42000,
+    stock_quantity: 100,
+    unit: 'carton',
+    status: 'active'
+  });
+
+  await db.insert('products', {
+    id: 2,
+    company_id: 1,
+    sku: 'SKU-1003',
+    name: 'Dangote Granulated Sugar 50kg Sack',
+    category: 'Commodities',
+    price: 88000,
+    cost_price: 79000,
+    stock_quantity: 50,
+    unit: 'bag',
+    status: 'active'
+  });
+
+  await db.insert('stores', {
+    id: 1,
+    company_id: 1,
+    code: 'STR-101',
+    name: 'Mega Plaza Supermarket',
+    latitude: 6.4281,
+    longitude: 3.4219,
+    geofence_radius: 150,
+    status: 'active'
+  });
+
+  await db.insert('leave_balances', {
+    id: 1,
+    employee_id: 1,
+    year: 2026,
+    annual: 18,
+    sick: 12,
+    casual: 5
+  });
+
+  await db.insert('work_locations', {
+    id: 1,
+    company_id: 1,
+    name: 'Mega Plaza Victoria Island',
+    code: 'LOC-VI-01',
+    location_type: 'Store',
+    latitude: 6.4281,
+    longitude: 3.4219,
+    radius_meters: 150,
+    geofence_radius_meters: 150,
+    address: '14B Idowu Martins St, Victoria Island, Lagos',
+    is_active: true
+  });
+
+  await db.insert('employee_location_assignments', {
+    id: 1,
+    company_id: 1,
+    employee_id: 2,
+    location_id: 1,
+    assignment_type: 'primary',
+    is_primary: true,
+    is_active: true
+  });
 
   await t.test('1. Authentication: Login with seed accounts and verify JWT token', async () => {
     // Sales Agent login
@@ -91,8 +178,8 @@ test('EdgeWForce Core Workflow Tests', async (t) => {
   });
 
   await t.test('5. Field Operations: Shift start & GPS toggle', async () => {
-    const shift = await fieldService.toggleShift(2, 6.4281, 3.4219, 'Android Chrome');
-    assert.ok(shift.clock_in || shift.clock_in_time);
+    const shift = await fieldService.toggleShift(2, 6.4281, 3.4219, 'Android Chrome', null, '2026-08-21T07:30:00Z');
+    assert.ok(shift.clock_in || shift.clock_in_time || shift.morning_clock_in);
     assert.ok(['present', 'late'].includes(shift.status.toLowerCase()));
   });
 

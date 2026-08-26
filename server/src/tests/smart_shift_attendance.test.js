@@ -62,6 +62,23 @@ test('Smart Shift Attendance & Nigeria Timezone Engine', async (t) => {
   }
 
   // Location 8: Ikeja Central Distribution Depot (lat: 6.5984, lng: 3.3524, radius: 150m)
+  let loc8 = await db.findById('work_locations', 8);
+  if (!loc8) {
+    await db.insert('work_locations', {
+      id: 8,
+      company_id: 1,
+      name: 'Ikeja Central Distribution Depot',
+      code: 'LOC-IKJ-01',
+      location_type: 'Depot',
+      latitude: 6.5984,
+      longitude: 3.3524,
+      radius_meters: 150,
+      geofence_radius_meters: 150,
+      address: 'Plot 4 Commercial Avenue, Ikeja Industrial Estate, Lagos',
+      is_active: true
+    });
+  }
+
   const existingAssign1 = await db.findOne('employee_location_assignments', { employee_id: 1, is_active: true });
   if (!existingAssign1) {
     await db.insert('employee_location_assignments', {

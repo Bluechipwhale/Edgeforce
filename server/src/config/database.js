@@ -37,177 +37,26 @@ if (process.env.NODE_ENV !== 'test' && !process.env.TEST_MODE && process.env.SUP
 
 const defaultPasswordHash = bcrypt.hashSync('ChangeMe123!', 10);
 
-// Helper to generate 100 realistic Nigerian customers
-function generateSeedCustomers() {
-  const storeNames = [
-    'Mega Plaza Supermarket', 'Prince Ebeano Supermarket Lekki', 'Spar Nigeria Ikeja Mall', 'Goodies Supermarket VI',
-    'Hubmart Stores Ikeja GRA', 'Jendol Superstore Egbeda', 'Justrite Superstore Ikorodu', 'Bazaar Supermarket Victoria Island',
-    'Grand Square Supermarket Abuja', 'Next Cash & Carry Abuja', '4U Supermarket Wuse 2 Abuja', 'Sahad Stores Central Abuja',
-    'Market Square Port Harcourt', 'Everyday Supermarket GRA Port Harcourt', 'Genesis Hypermarket Port Harcourt',
-    'Well Care Supermarket Kano', 'Country Store Supermarket Kano', 'Jifatu General Enterprises Kano',
-    'Blenco Supermarket Sangotedo', 'Adide Retail Outlet Surulere', 'De-Prince Supermarket Magodo', 'Super Saver Ketu',
-    'Addide Stores Yaba', 'Best Choice Supermarket Opebi', 'Choice City Supermarket Festac', 'Bheerhugz Retail Palms Lekki',
-    'Twins Faja Supermarket Trade Fair', 'Abebi Stores Balogun Market', 'Chukwudi Provisions Onitsha Depot', 'Danbaba Wholesalers Kano',
-    'Iya Moria General Provisions Gbagi', 'Boluwatife Stores Dugbe Ibadan', 'Alhaji Musa Grain Depot Bodija', 'Kano Central Provisions Dawanau',
-    'Onyx Wholesale Depot Alaba', 'Success & Sons Minimart Agege', 'Divine Mercy Supermarket Ajah', 'Blessed Trinity Groceries Owerri',
-    'Pinnacle Mart Asaba', 'Greenfields Retailers Calabar', 'Atlantic Supermarket Uyo', 'Crown Supermarket Benin City',
-    'Emirates Wholesale Depot Warri', 'Zenith Superstores Jos', 'Unity Minimart Kaduna', 'Savannah Provisions Maiduguri',
-    'Silverbird Retail Gallery VI', 'Amigo Department Store Abuja', 'Globus Supermarket Ikeja', 'Alpha & Omega Store Satellite Town'
-  ];
-
-  const territories = [
-    { id: 1, name: 'Lagos Mainland', region_id: 1, baseLat: 6.5244, baseLng: 3.3792 },
-    { id: 2, name: 'Lagos Island & Lekki', region_id: 1, baseLat: 6.4281, baseLng: 3.4219 },
-    { id: 3, name: 'Ikeja & Industrial', region_id: 1, baseLat: 6.5984, baseLng: 3.3524 },
-    { id: 4, name: 'Abuja Central', region_id: 2, baseLat: 9.0765, baseLng: 7.3986 },
-    { id: 5, name: 'Port Harcourt Metro', region_id: 3, baseLat: 4.8156, baseLng: 7.0498 },
-    { id: 6, name: 'Kano Urban', region_id: 2, baseLat: 12.0022, baseLng: 8.5920 }
-  ];
-
-  const types = ['Retail', 'Wholesale', 'Distributor', 'Modern Trade', 'Key Account'];
-  const tiers = ['Tier 1', 'Tier 2', 'Tier 3'];
-  const customers = [];
-
-  for (let i = 1; i <= 100; i++) {
-    const baseName = storeNames[(i - 1) % storeNames.length];
-    const name = i > storeNames.length ? `${baseName} - Branch ${Math.floor(i / storeNames.length) + 1}` : baseName;
-    const terr = territories[(i - 1) % territories.length];
-    const custType = types[(i - 1) % types.length];
-    const tier = tiers[(i - 1) % tiers.length];
-
-    // Jitter coordinates slightly around base
-    const lat = Number((terr.baseLat + (Math.sin(i * 99) * 0.045)).toFixed(6));
-    const lng = Number((terr.baseLng + (Math.cos(i * 99) * 0.045)).toFixed(6));
-
-    customers.push({
-      id: i,
-      company_id: 1,
-      code: `CUST-${String(1000 + i)}`,
-      name,
-      business_name: name,
-      customer_type: custType,
-      tier,
-      region_id: terr.region_id,
-      territory_id: terr.id,
-      territory: terr.name,
-      address: `${10 + (i % 80)} Commercial Avenue, ${terr.name}`,
-      latitude: lat,
-      longitude: lng,
-      geofence_radius: 150,
-      contact_person: `Manager ${i}`,
-      phone: `+23480${String(10000000 + i * 8831).slice(0, 8)}`,
-      email: `outlet${i}@retailnetwork.ng`,
-      credit_limit: custType === 'Distributor' ? 5000000 : (custType === 'Wholesale' ? 2500000 : 800000),
-      balance: (i % 4 === 0) ? (i * 35000) : ((i % 5 === 0) ? (i * 18000) : 0),
-      assigned_agent_id: 1 + (i % 12),
-      assigned_supervisor_id: 9 + (i % 3),
-      status: 'active',
-      last_visit_at: new Date(Date.now() - (i % 7) * 86400000).toISOString(),
-      last_order_at: new Date(Date.now() - (i % 5) * 86400000).toISOString(),
-      total_sales_ngn: (i * 125000) + 250000,
-      created_at: new Date(Date.now() - 60 * 86400000).toISOString()
-    });
-  }
-  return customers;
-}
-
-// Helper to generate 50 realistic products with Nigerian FMCG brands
-function generateSeedProducts() {
-  const catalog = [
-    { sku: 'SKU-1001', name: 'Golden Penny Pure Vegetable Oil (1L x 12)', category: 'Cooking Essentials', price: 48500, cost_price: 42000, unit: 'carton' },
-    { sku: 'SKU-1002', name: 'Milo Energy Food Drink 500g (Tin x 24)', category: 'Beverages', price: 78000, cost_price: 68000, unit: 'carton' },
-    { sku: 'SKU-1003', name: 'Dangote Granulated Sugar 50kg Sack', category: 'Commodities', price: 88000, cost_price: 79000, unit: 'bag' },
-    { sku: 'SKU-1004', name: 'Indomie Super Pack Onion Chicken (40 packs)', category: 'Packaged Foods', price: 18500, cost_price: 15500, unit: 'carton' },
-    { sku: 'SKU-1005', name: 'Peak Full Cream Milk Powder 400g (x 24)', category: 'Dairy', price: 84000, cost_price: 74000, unit: 'carton' },
-    { sku: 'SKU-1006', name: 'Knorr Chicken Seasoning Cubes (50 x 24)', category: 'Seasonings', price: 34000, cost_price: 29000, unit: 'carton' },
-    { sku: 'SKU-1007', name: 'Eva Premium Table Water 75cl (Pack of 12)', category: 'Beverages', price: 3200, cost_price: 2500, unit: 'pack' },
-    { sku: 'SKU-1008', name: 'Dano Cool Cow Evaporated Milk (48 x 160g)', category: 'Dairy', price: 41000, cost_price: 35500, unit: 'carton' },
-    { sku: 'SKU-1009', name: 'Golden Penny Semovita 10kg Bag', category: 'Packaged Foods', price: 14500, cost_price: 12200, unit: 'bag' },
-    { sku: 'SKU-1010', name: 'Mama Gold Thai Parboiled Rice 50kg', category: 'Commodities', price: 92000, cost_price: 84000, unit: 'bag' },
-    { sku: 'SKU-1011', name: 'Gino Tomato Paste 70g Sachet (50 x 5)', category: 'Cooking Essentials', price: 29500, cost_price: 25000, unit: 'carton' },
-    { sku: 'SKU-1012', name: 'Sunlight 2-in-1 Detergent Powder 900g (x 12)', category: 'Household Care', price: 24000, cost_price: 19800, unit: 'carton' },
-    { sku: 'SKU-1013', name: 'Hypo Bleach Super Shine 1L (x 12)', category: 'Household Care', price: 16500, cost_price: 13500, unit: 'carton' },
-    { sku: 'SKU-1014', name: 'Morning Fresh Dishwashing Liquid 1L (x 12)', category: 'Household Care', price: 28000, cost_price: 23500, unit: 'carton' },
-    { sku: 'SKU-1015', name: 'CloseUp Red Hot Gel Toothpaste 140g (x 48)', category: 'Personal Care', price: 42000, cost_price: 36000, unit: 'carton' },
-    { sku: 'SKU-1016', name: 'Dettol Antiseptic Disinfectant Liquid 500ml (x 12)', category: 'Personal Care', price: 38000, cost_price: 32000, unit: 'carton' },
-    { sku: 'SKU-1017', name: 'Premier Cool Deodorant Soap 125g (x 48)', category: 'Personal Care', price: 26000, cost_price: 21500, unit: 'carton' },
-    { sku: 'SKU-1018', name: 'Lipton Yellow Label Tea Bags (100s x 12)', category: 'Beverages', price: 28500, cost_price: 24000, unit: 'carton' },
-    { sku: 'SKU-1019', name: 'Nescafe Classic Instant Coffee 50g (x 24)', category: 'Beverages', price: 36000, cost_price: 30500, unit: 'carton' },
-    { sku: 'SKU-1020', name: 'Coca-Cola Original 50cl PET (Pack of 12)', category: 'Beverages', price: 4800, cost_price: 3900, unit: 'pack' },
-    { sku: 'SKU-1021', name: 'Malta Guinness Can 33cl (Pack of 24)', category: 'Beverages', price: 14500, cost_price: 12200, unit: 'pack' },
-    { sku: 'SKU-1022', name: 'Monster Energy Drink 500ml (Pack of 24)', category: 'Beverages', price: 29000, cost_price: 24500, unit: 'pack' },
-    { sku: 'SKU-1023', name: 'Chivita 100% Real Orange Juice 1L (x 10)', category: 'Beverages', price: 17500, cost_price: 14800, unit: 'carton' },
-    { sku: 'SKU-1024', name: 'Hollandia Yoghurt Plain Sweet 1L (x 10)', category: 'Dairy', price: 18500, cost_price: 15400, unit: 'carton' },
-    { sku: 'SKU-1025', name: 'Pringles Sour Cream & Onion 165g (x 14)', category: 'Snacks & Biscuits', price: 35000, cost_price: 29500, unit: 'carton' },
-    { sku: 'SKU-1026', name: 'Beloxxi Cream Crackers Biscuit (Pack of 30)', category: 'Snacks & Biscuits', price: 12500, cost_price: 10200, unit: 'carton' },
-    { sku: 'SKU-1027', name: 'McVities Digestives Original 400g (x 12)', category: 'Snacks & Biscuits', price: 26000, cost_price: 21800, unit: 'carton' },
-    { sku: 'SKU-1028', name: 'Gala Sausage Roll Regular (Box of 100)', category: 'Snacks & Biscuits', price: 19500, cost_price: 16000, unit: 'carton' },
-    { sku: 'SKU-1029', name: 'Pampers Baby Dry Diapers Maxi Size 4 (Pack of 4)', category: 'Baby & Child Care', price: 44000, cost_price: 37500, unit: 'carton' },
-    { sku: 'SKU-1030', name: 'Cussons Baby Powder 200g (x 24)', category: 'Baby & Child Care', price: 31000, cost_price: 26000, unit: 'carton' },
-    { sku: 'SKU-1031', name: 'Always Ultra Sanitary Pads (Pack of 24)', category: 'Personal Care', price: 29500, cost_price: 24800, unit: 'carton' },
-    { sku: 'SKU-1032', name: 'Oral-B Pro-Health Toothbrush (Pack of 24)', category: 'Personal Care', price: 22000, cost_price: 18000, unit: 'carton' },
-    { sku: 'SKU-1033', name: 'Devon Kings Margarine 250g (x 24)', category: 'Cooking Essentials', price: 27500, cost_price: 23000, unit: 'carton' },
-    { sku: 'SKU-1034', name: 'Mamador Pure Cook Vegetable Oil 3.8L (x 4)', category: 'Cooking Essentials', price: 62000, cost_price: 54000, unit: 'carton' },
-    { sku: 'SKU-1035', name: 'Grand Pure Soya Oil 2.75L (x 6)', category: 'Cooking Essentials', price: 58000, cost_price: 50500, unit: 'carton' },
-    { sku: 'SKU-1036', name: 'Golden Terra Soya Oil Sachet 1L (x 12)', category: 'Cooking Essentials', price: 46000, cost_price: 39500, unit: 'carton' },
-    { sku: 'SKU-1037', name: 'Royco Beef Seasoning Cubes (40 x 24)', category: 'Seasonings', price: 31000, cost_price: 26500, unit: 'carton' },
-    { sku: 'SKU-1038', name: 'Terra Chicken Seasoning Cubes (50 x 24)', category: 'Seasonings', price: 28500, cost_price: 24000, unit: 'carton' },
-    { sku: 'SKU-1039', name: 'Golden Penny Spaghetti 500g (x 20)', category: 'Packaged Foods', price: 22000, cost_price: 18500, unit: 'carton' },
-    { sku: 'SKU-1040', name: 'Dangote Flour 50kg Confectionery Bag', category: 'Commodities', price: 74000, cost_price: 66000, unit: 'bag' },
-    { sku: 'SKU-1041', name: 'Nutrimilk Apple Flavoured Drink 500ml (x 12)', category: 'Beverages', price: 6200, cost_price: 5100, unit: 'pack' },
-    { sku: 'SKU-1042', name: 'Chi Exotic Nectar Pineapple Coconut 1L (x 10)', category: 'Beverages', price: 18000, cost_price: 15200, unit: 'carton' },
-    { sku: 'SKU-1043', name: 'Five Alive Citrus Burst Juice 75cl (Pack of 12)', category: 'Beverages', price: 9500, cost_price: 7900, unit: 'pack' },
-    { sku: 'SKU-1044', name: 'Ariel Auto Washing Powder 2kg (x 6)', category: 'Household Care', price: 38000, cost_price: 32500, unit: 'carton' },
-    { sku: 'SKU-1045', name: 'Viva Plus Detergent 900g (x 12)', category: 'Household Care', price: 21000, cost_price: 17500, unit: 'carton' },
-    { sku: 'SKU-1046', name: 'Harpic Power Plus Toilet Cleaner 750ml (x 12)', category: 'Household Care', price: 24500, cost_price: 20500, unit: 'carton' },
-    { sku: 'SKU-1047', name: 'Baygon Multi Insect Killer Spray 600ml (x 12)', category: 'Household Care', price: 39000, cost_price: 33500, unit: 'carton' },
-    { sku: 'SKU-1048', name: 'Vaseline Petroleum Jelly Original 250g (x 24)', category: 'Personal Care', price: 34500, cost_price: 29000, unit: 'carton' },
-    { sku: 'SKU-1049', name: 'Nivea Body Milk Lotion 400ml (x 12)', category: 'Personal Care', price: 56000, cost_price: 48000, unit: 'carton' },
-    { sku: 'SKU-1050', name: 'Oral-B Complete Toothpaste 100ml (x 24)', category: 'Personal Care', price: 29000, cost_price: 24500, unit: 'carton' }
-  ];
-
-  const warehousesList = ['Ikeja Central Depot', 'Apapa Port Hub', 'Abuja Regional Warehouse'];
-
-  return catalog.map((p, idx) => {
-    const whName = warehousesList[idx % warehousesList.length];
-    const aisle = (idx % 8) + 1;
-    const bay = String.fromCharCode(65 + (idx % 6));
-    const rack = (idx % 4) + 1;
-    return {
-      id: idx + 1,
-      company_id: 1,
-      ...p,
-      warehouse_name: whName,
-      shelve_location: `Aisle ${aisle} - Bay ${bay} (Rack ${rack})`,
-      stock_quantity: 80 + (idx * 5),
-      reorder_level: 25,
-      status: 'active',
-      created_at: new Date().toISOString()
-    };
-  });
-}
-
 const initialSeed = {
   companies: [
     {
       id: 1,
       uuid: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
-      name: 'Nexfeild',
-      business_type: 'FMCG Wholesale & Retail Distribution',
-      industry: 'Consumer Goods & Retail',
+      name: 'Experiential Edge Nigeria Limited',
+      business_type: 'Commercial Sales & Field Operations',
+      industry: 'Field Sales Force Automation & Workforce Operations',
       registration_number: 'RC-1849201',
-      email: 'operations@nexfeild.ng',
-      phone: '+2348006393435',
-      address: 'Plot 12, Commercial Avenue, Ikeja Industrial Estate, Lagos',
+      email: 'operations@edgewforce.com',
+      phone: '+2348000000001',
+      address: '15 Atiba Osborne, Mende, Maryland, Lagos',
       country: 'Nigeria',
       state: 'Lagos',
-      city: 'Ikeja',
+      city: 'Lagos',
       logo_url: null,
       status: 'active',
       created_at: new Date().toISOString()
     }
   ],
-
   company_settings: [
     {
       id: 1,
@@ -249,24 +98,9 @@ const initialSeed = {
     { id: 5, company_id: 1, region_id: 3, code: 'PH-METRO', name: 'Port Harcourt Metro' },
     { id: 6, company_id: 1, region_id: 2, code: 'KAN-URB', name: 'Kano Urban' }
   ],
-  teams: [
-    { id: 1, company_id: 1, territory_id: 1, name: 'Team Alpha (Mainland Commercials)', supervisor_id: 9 },
-    { id: 2, company_id: 1, territory_id: 2, name: 'Team Bravo (Island & Key Accounts)', supervisor_id: 9 },
-    { id: 3, company_id: 1, territory_id: 3, name: 'Team Charlie (Ikeja Merchandising)', supervisor_id: 9 },
-    { id: 4, company_id: 1, territory_id: 4, name: 'Team Delta (Abuja Federal)', supervisor_id: 9 },
-    { id: 5, company_id: 1, territory_id: 5, name: 'Team Echo (Rivers & Delta)', supervisor_id: 9 }
-  ],
-  branches: [
-    { id: 1, company_id: 1, name: 'Lagos Corporate HQ', address: '15 Atiba Osborne, Mende, Maryland, Lagos', phone: '+2348031234567' },
-    { id: 2, company_id: 1, name: 'Victoria Island Experience Center', address: '14B Idowu Martins St, VI, Lagos', phone: '+2348099887766' },
-    { id: 3, company_id: 1, name: 'Abuja Regional Distribution Hub', address: 'Plot 412, Central Business District, Abuja', phone: '+2348055443322' },
-    { id: 4, company_id: 1, name: 'Port Harcourt Operations Base', address: '54 Trans-Amadi Industrial Layout, PH', phone: '+2348077665544' }
-  ],
-  warehouses: [
-    { id: 1, company_id: 1, code: 'WH-IKJ', name: 'Ikeja Central Distribution Center', address: 'Plot 12, Commercial Avenue, Ikeja, Lagos', manager_id: 8 },
-    { id: 2, company_id: 1, code: 'WH-LEK', name: 'Lekki Peninsula Fulfillment Depot', address: 'Oniru Commercial Zone, Lekki, Lagos', manager_id: 9 },
-    { id: 3, company_id: 1, code: 'WH-ABJ', name: 'Abuja Northern Hub Warehouse', address: 'Industrial Layout, Idu, Abuja', manager_id: 8 }
-  ],
+  teams: [],
+  branches: [],
+  warehouses: [],
   departments: [
     { id: 1, name: 'Commercial Sales', code: 'SALES', description: 'Retail distribution & accounts' },
     { id: 2, name: 'Field Operations', code: 'FIELD', description: 'Store audits & route execution' },
@@ -321,7 +155,8 @@ const initialSeed = {
     { id: 5, company_id: 1, full_name: 'Field Operations Lead', email: 'field@edgewforce.com', password_hash: defaultPasswordHash, phone: '+2348029876543', role_code: 'FIELD_AGENT', status: 'active', created_at: new Date().toISOString() },
     { id: 6, company_id: 1, full_name: 'Finance & Accounting Lead', email: 'accountant@edgewforce.com', password_hash: defaultPasswordHash, phone: '+2348000000006', role_code: 'ACCOUNTANT', status: 'active', created_at: new Date().toISOString() },
     { id: 7, company_id: 1, full_name: 'Field Operations Supervisor', email: 'supervisor@edgewforce.com', password_hash: defaultPasswordHash, phone: '+2348187654321', role_code: 'SUPERVISOR', status: 'active', created_at: new Date().toISOString() },
-    { id: 8, company_id: 1, full_name: 'Corporate Operations Staff', email: 'staff@edgewforce.com', password_hash: defaultPasswordHash, phone: '+2348145550192', role_code: 'STAFF_MEMBER', status: 'active', created_at: new Date().toISOString() }
+    { id: 8, company_id: 1, full_name: 'Corporate Operations Staff', email: 'staff@edgewforce.com', password_hash: defaultPasswordHash, phone: '+2348145550192', role_code: 'STAFF_MEMBER', status: 'active', created_at: new Date().toISOString() },
+    { id: 9, company_id: 1, full_name: 'Platform Super Administrator', email: 'admin@edgewforce.com', password_hash: defaultPasswordHash, phone: '+2348000000000', role_code: 'SUPER_ADMIN', status: 'active', created_at: new Date().toISOString() }
   ],
   employees: [
     { id: 1, company_id: 1, user_id: 1, employee_code: 'EMP-1001', first_name: 'IT Admin', last_name: 'Service', phone: '+2348000000001', department_id: 5, department: 'Technology & IT', position: 'IT Super Admin / System Engineer', territory: 'Headquarters', rank_code: 'IT_ADMIN', base_salary: 1800000, performance_score: 98.0, status: 'active' },
@@ -331,10 +166,11 @@ const initialSeed = {
     { id: 5, company_id: 1, user_id: 5, employee_code: 'EMP-1005', first_name: 'Godfrey', last_name: 'Okorie', phone: '+2348029876543', department_id: 2, department: 'Field Operations', position: 'Field Operations Lead Agent', territory: 'Lagos Island & Lekki', supervisor_id: 7, rank_code: 'STAFF', base_salary: 350000, performance_score: 88.0, status: 'active' },
     { id: 6, company_id: 1, user_id: 6, employee_code: 'EMP-1006', first_name: 'Finance', last_name: 'Officer', phone: '+2348000000006', department_id: 4, department: 'Finance & Accounts', position: 'Head of Accounting & Payroll', territory: 'Headquarters', rank_code: 'ACCOUNTANT', base_salary: 1100000, performance_score: 90.0, status: 'active' },
     { id: 7, company_id: 1, user_id: 7, employee_code: 'EMP-1007', first_name: 'Amina', last_name: 'Bello', phone: '+2348187654321', department_id: 2, department: 'Field Operations', position: 'Field Operations Supervisor', territory: 'Lagos Island', rank_code: 'SUPERVISOR', base_salary: 750000, performance_score: 96.0, status: 'active' },
-    { id: 8, company_id: 1, user_id: 8, employee_code: 'EMP-1008', first_name: 'Gloria', last_name: 'Iwuh', phone: '+2348145550192', department_id: 3, department: 'Corporate Operations', position: 'Workforce Operations Analyst', territory: 'Headquarters', supervisor_id: 3, rank_code: 'STAFF', base_salary: 420000, performance_score: 85.0, status: 'active' }
+    { id: 8, company_id: 1, user_id: 8, employee_code: 'EMP-1008', first_name: 'Gloria', last_name: 'Iwuh', phone: '+2348145550192', department_id: 3, department: 'Corporate Operations', position: 'Workforce Operations Analyst', territory: 'Headquarters', supervisor_id: 3, rank_code: 'STAFF', base_salary: 420000, performance_score: 85.0, status: 'active' },
+    { id: 9, company_id: 1, user_id: 9, employee_code: 'EMP-1009', first_name: 'Platform', last_name: 'Administrator', phone: '+2348000000000', department_id: 6, department: 'Executive Governance', position: 'Super Administrator', territory: 'National', rank_code: 'CEO', base_salary: 1800000, performance_score: 99.0, status: 'active' }
   ],
-  customers: generateSeedCustomers(),
-  products: generateSeedProducts(),
+  customers: [],
+  products: [],
   orders: [],
   order_items: [],
   order_approvals: [],
@@ -348,329 +184,27 @@ const initialSeed = {
   alerts: [],
   performance_scores: [],
   audit_logs: [],
-  stores: [
-    { id: 1, code: 'STR-101', name: 'Mega Plaza Supermarket', store_type: 'Supermarket', contact_person: 'Alhaji Rasheed Bello', phone: '+2348034567890', email: 'procurement@megaplaza.ng', address: '14B Idowu Martins St, Victoria Island, Lagos', territory: 'Lagos Island', latitude: 6.4281, longitude: 3.4219, geofence_radius: 150, supervisor_id: 9, company_id: 1, assigned_field_agents: [2], assigned_sales_agents: [1], status: 'active', created_at: new Date().toISOString() }
-  ],
+  stores: [],
   store_requests: [],
-  work_locations: [
-    { id: 1, company_id: 1, name: 'Lagos Victoria Island Office', location_type: 'Office', address: '14B Idowu Martins St, Victoria Island', state: 'Lagos', lga: 'Eti-Osa', city: 'Victoria Island', latitude: 6.4281, longitude: 3.4219, geofence_radius: 150, geofence_radius_meters: 150, status: 'active', created_by: 4, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-    { id: 2, company_id: 1, name: 'Ibadan Dugbe Central Market', location_type: 'Market', address: 'Dugbe Commercial Hub, Ibadan', state: 'Oyo', lga: 'Ibadan North-West', city: 'Ibadan', latitude: 7.3872, longitude: 3.8821, geofence_radius: 150, geofence_radius_meters: 150, status: 'active', created_by: 4, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-    { id: 3, company_id: 1, name: 'Abeokuta Kuto Regional Market', location_type: 'Market', address: 'Kuto Market Road, Abeokuta', state: 'Ogun', lga: 'Abeokuta South', city: 'Abeokuta', latitude: 7.1452, longitude: 3.3483, geofence_radius: 200, geofence_radius_meters: 200, status: 'active', created_by: 4, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-    { id: 4, company_id: 1, name: 'Abuja Central Business Hub', location_type: 'Branch', address: 'Plot 412 CBD, Abuja', state: 'FCT Abuja', lga: 'Municipal', city: 'Abuja Central', latitude: 9.0578, longitude: 7.4951, geofence_radius: 150, geofence_radius_meters: 150, status: 'active', created_by: 4, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-    { id: 5, company_id: 1, name: 'Kano Dawanau Provisions Depot', location_type: 'Market', address: 'Dawanau Wholesale Market Axis, Kano', state: 'Kano', lga: 'Dawakin Tofa', city: 'Kano', latitude: 12.0833, longitude: 8.4500, geofence_radius: 250, geofence_radius_meters: 250, status: 'active', created_by: 4, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-    { id: 6, company_id: 1, name: 'Port Harcourt Trans-Amadi Hub', location_type: 'Distributor', address: '54 Trans-Amadi Industrial Layout, Port Harcourt', state: 'Rivers', lga: 'Port Harcourt', city: 'Port Harcourt', latitude: 4.8156, longitude: 7.0498, geofence_radius: 150, geofence_radius_meters: 150, status: 'active', created_by: 4, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-    { id: 7, company_id: 1, name: 'Enugu Main Market Branch', location_type: 'Branch', address: 'Market Road, Ogbete, Enugu', state: 'Enugu', lga: 'Enugu North', city: 'Enugu', latitude: 6.4474, longitude: 7.4984, geofence_radius: 150, geofence_radius_meters: 150, status: 'active', created_by: 4, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-    { id: 8, company_id: 1, name: 'Ikeja Central Distribution Depot', location_type: 'Warehouse', address: 'Plot 12, Commercial Avenue, Ikeja Industrial Estate', state: 'Lagos', lga: 'Ikeja', city: 'Ikeja', latitude: 6.5984, longitude: 3.3524, geofence_radius: 150, geofence_radius_meters: 150, status: 'active', created_by: 4, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }
-  ],
-  employee_location_assignments: [
-    { id: 1, company_id: 1, employee_id: 1, location_id: 8, assignment_type: 'primary', is_primary: true, is_active: true, start_date: null, end_date: null, assigned_by: 4, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-    { id: 2, company_id: 1, employee_id: 2, location_id: 1, assignment_type: 'primary', is_primary: true, is_active: true, start_date: null, end_date: null, assigned_by: 4, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-    { id: 3, company_id: 1, employee_id: 2, location_id: 8, assignment_type: 'secondary', is_primary: false, is_active: true, start_date: null, end_date: null, assigned_by: 4, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-    { id: 4, company_id: 1, employee_id: 3, location_id: 8, assignment_type: 'primary', is_primary: true, is_active: true, start_date: null, end_date: null, assigned_by: 4, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-    { id: 5, company_id: 1, employee_id: 11, location_id: 3, assignment_type: 'primary', is_primary: true, is_active: true, start_date: null, end_date: null, assigned_by: 4, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-    { id: 6, company_id: 1, employee_id: 12, location_id: 8, assignment_type: 'primary', is_primary: true, is_active: true, start_date: null, end_date: null, assigned_by: 4, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }
-  ],
-  location_assignment_history: [
-    { id: 1, company_id: 1, employee_id: 1, previous_location_id: null, previous_location_name: null, new_location_id: 8, new_location_name: 'Ikeja Central Distribution Depot', assignment_type: 'primary', action: 'ASSIGNED', changed_by: 4, changed_by_name: 'Admin', reason: 'Initial department placement', created_at: new Date(Date.now() - 30 * 86400000).toISOString() },
-    { id: 2, company_id: 1, employee_id: 2, previous_location_id: null, previous_location_name: null, new_location_id: 1, new_location_name: 'Lagos Victoria Island Office', assignment_type: 'primary', action: 'ASSIGNED', changed_by: 4, changed_by_name: 'Admin', reason: 'Assigned to Island regional center', created_at: new Date(Date.now() - 30 * 86400000).toISOString() },
-    { id: 3, company_id: 1, employee_id: 11, previous_location_id: null, previous_location_name: null, new_location_id: 3, new_location_name: 'Abeokuta Kuto Regional Market', assignment_type: 'primary', action: 'ASSIGNED', changed_by: 4, changed_by_name: 'Admin', reason: 'Assigned to Ogun territory', created_at: new Date(Date.now() - 20 * 86400000).toISOString() }
-  ],
-  location_logs: [
-    {
-      id: 255126,
-      employee_id: 11,
-      employee_name: 'Oke Oluwafolakemi Abosede',
-      role: 'SALES_AGENT',
-      company_id: 1,
-      supervisor_id: 9,
-      store_id: 2,
-      location_id: 2,
-      assigned_market: 'Ibadan Bodija Market',
-      assigned_region: 'WEST',
-      assigned_state: 'Oyo',
-      timestamp: new Date().toISOString(),
-      server_timestamp: new Date().toISOString(),
-      local_time_lagos: '2026-08-21 08:37:50',
-      latitude: 7.3875,
-      longitude: 3.8824,
-      accuracy: 4.8,
-      address: 'Bodija Market Hub, Ibadan, Oyo State',
-      current_activity: 'Morning Attendance',
-      activity: 'Morning Attendance',
-      attendance_type: 'MORNING_ATTENDANCE',
-      attendance_id: 1,
-      is_inside_geofence: true,
-      distance_from_store: 24,
-      distance_meters: 24,
-      geofence_status: 'Verified',
-      status: 'success',
-      battery_level: 95
-    },
-    {
-      id: 255125,
-      employee_id: 2,
-      employee_name: 'Babatunde Lawal',
-      role: 'FIELD_AGENT',
-      company_id: 1,
-      supervisor_id: 9,
-      store_id: 1,
-      location_id: 1,
-      assigned_market: 'Lagos Victoria Island Office',
-      assigned_region: 'LAGOS',
-      assigned_state: 'Lagos',
-      timestamp: new Date(Date.now() - 3600000).toISOString(),
-      server_timestamp: new Date(Date.now() - 3600000).toISOString(),
-      local_time_lagos: '2026-08-21 08:12:15',
-      latitude: 6.4282,
-      longitude: 3.4220,
-      accuracy: 3.2,
-      address: '14B Idowu Martins St, Victoria Island, Lagos',
-      current_activity: 'Morning Attendance',
-      activity: 'Morning Attendance',
-      attendance_type: 'MORNING_ATTENDANCE',
-      attendance_id: 2,
-      is_inside_geofence: true,
-      distance_from_store: 12,
-      distance_meters: 12,
-      geofence_status: 'Verified',
-      status: 'success',
-      battery_level: 88
-    },
-    {
-      id: 255124,
-      employee_id: 12,
-      employee_name: 'Chiamaka Nwosu',
-      role: 'FIELD_AGENT',
-      company_id: 1,
-      supervisor_id: 9,
-      store_id: 7,
-      location_id: 7,
-      assigned_market: 'Enugu Main Market Branch',
-      assigned_region: 'EAST',
-      assigned_state: 'Enugu',
-      timestamp: new Date(Date.now() - 7200000).toISOString(),
-      server_timestamp: new Date(Date.now() - 7200000).toISOString(),
-      local_time_lagos: '2026-08-21 07:45:00',
-      latitude: 6.4475,
-      longitude: 7.4985,
-      accuracy: 5.0,
-      address: 'Market Road, Ogbete, Enugu State',
-      current_activity: 'Morning Attendance',
-      activity: 'Morning Attendance',
-      attendance_type: 'MORNING_ATTENDANCE',
-      attendance_id: 3,
-      is_inside_geofence: true,
-      distance_from_store: 45,
-      distance_meters: 45,
-      geofence_status: 'Verified',
-      status: 'success',
-      battery_level: 92
-    },
-    {
-      id: 255123,
-      employee_id: 10,
-      employee_name: 'Bashiru Aminu',
-      role: 'SALES_AGENT',
-      company_id: 1,
-      supervisor_id: 9,
-      store_id: 5,
-      location_id: 5,
-      assigned_market: 'Kano Dawanau Provisions Depot',
-      assigned_region: 'NORTH',
-      assigned_state: 'Kano',
-      timestamp: new Date(Date.now() - 14400000).toISOString(),
-      server_timestamp: new Date(Date.now() - 14400000).toISOString(),
-      local_time_lagos: '2026-08-21 07:30:20',
-      latitude: 12.0834,
-      longitude: 8.4501,
-      accuracy: 4.1,
-      address: 'Dawanau Wholesale Market Axis, Kano State',
-      current_activity: 'Morning Attendance',
-      activity: 'Morning Attendance',
-      attendance_type: 'MORNING_ATTENDANCE',
-      attendance_id: 4,
-      is_inside_geofence: true,
-      distance_from_store: 30,
-      distance_meters: 30,
-      geofence_status: 'Verified',
-      status: 'success',
-      battery_level: 98
-    }
-  ],
+  work_locations: [],
+  employee_location_assignments: [],
+  location_assignment_history: [],
+  location_logs: [],
   field_activities: [],
   sales_activities: [],
   location_alerts: [],
   daily_summaries: [],
-  leave_balances: [
-    { id: 1, employee_id: 1, year: 2026, annual: 18, sick: 12, casual: 5 },
-    { id: 2, employee_id: 2, year: 2026, annual: 20, sick: 10, casual: 4 },
-    { id: 3, employee_id: 3, year: 2026, annual: 15, sick: 12, casual: 5 },
-    { id: 5, employee_id: 5, year: 2026, annual: 25, sick: 15, casual: 5 }
-  ],
+  leave_balances: [],
   leave_requests: [],
   payslips: [],
   okrs: [],
-  tasks: [
-    {
-      id: 1,
-      company_id: 1,
-      assigned_to: 1,
-      assigned_by: 9,
-      supervisor_id: 9,
-      department_id: 1,
-      title: 'Submit Commercial Campaign Performance Deck',
-      description: 'Prepare final Q3 reach metrics, retail shelf photos, and engagement report.',
-      client_name: 'Carex Nigeria',
-      project_name: 'Carex Clean Hands Tour',
-      priority: 'high',
-      task_type: 'delivery',
-      status: 'pending',
-      delivery_stages: {
-        prepared: true,
-        reviewed: true,
-        sent_to_client: false,
-        client_delivery: false
-      },
-      due_at: new Date(Date.now() + 2 * 3600000).toISOString(),
-      due_date: new Date().toISOString().slice(0, 10),
-      acknowledged_at: new Date(Date.now() - 3600000).toISOString(),
-      acknowledged_by: 1,
-      completed_at: null,
-      created_at: new Date(Date.now() - 7200000).toISOString()
-    },
-    {
-      id: 2,
-      company_id: 1,
-      assigned_to: 2,
-      assigned_by: 9,
-      supervisor_id: 9,
-      department_id: 2,
-      title: 'Dispatch Merchandising Audit Proof',
-      description: 'Audit shelf positioning across Lekki superstores and deliver photo verification.',
-      client_name: 'PZ Cussons',
-      project_name: 'BBNaija Brand Activation',
-      priority: 'urgent',
-      task_type: 'delivery',
-      status: 'pending',
-      delivery_stages: {
-        prepared: true,
-        reviewed: false,
-        sent_to_client: false,
-        client_delivery: false
-      },
-      due_at: new Date(Date.now() + 45 * 60000).toISOString(),
-      due_date: new Date().toISOString().slice(0, 10),
-      acknowledged_at: null,
-      acknowledged_by: null,
-      completed_at: null,
-      created_at: new Date(Date.now() - 3600000).toISOString()
-    },
-    {
-      id: 3,
-      company_id: 1,
-      assigned_to: 1,
-      assigned_by: 9,
-      supervisor_id: 9,
-      department_id: 1,
-      title: 'Weekly Key Account Inventory Reconciliation',
-      description: 'Cross-check physical pallet stock with ERP orders for Mega Plaza and Ebeano.',
-      client_name: 'Internal Operations',
-      project_name: 'Operations Audit',
-      priority: 'normal',
-      task_type: 'general',
-      status: 'completed',
-      due_at: new Date(Date.now() - 4 * 3600000).toISOString(),
-      due_date: new Date().toISOString().slice(0, 10),
-      acknowledged_at: new Date(Date.now() - 6 * 3600000).toISOString(),
-      acknowledged_by: 1,
-      completed_at: new Date(Date.now() - 4.5 * 3600000).toISOString(),
-      completion_notes: 'Reconciliation complete. All 238 cartons verified and signed off.',
-      created_at: new Date(Date.now() - 8 * 3600000).toISOString()
-    }
-  ],
-  task_reminders: [
-    {
-      id: 1,
-      company_id: 1,
-      task_id: 1,
-      user_id: 1,
-      employee_id: 1,
-      reminder_at: new Date(Date.now() + 15 * 60000).toISOString(),
-      reminder_level: 'pre_deadline',
-      channels: ['in_app', 'email', 'whatsapp', 'push'],
-      status: 'scheduled',
-      attempts: 0,
-      idempotency_key: 'REM-1-pre_deadline-1',
-      created_at: new Date().toISOString()
-    },
-    {
-      id: 2,
-      company_id: 1,
-      task_id: 2,
-      user_id: 2,
-      employee_id: 2,
-      reminder_at: new Date(Date.now() + 5 * 60000).toISOString(),
-      reminder_level: 'pre_deadline',
-      channels: ['in_app', 'email', 'whatsapp', 'push'],
-      status: 'scheduled',
-      attempts: 0,
-      idempotency_key: 'REM-2-pre_deadline-2',
-      created_at: new Date().toISOString()
-    }
-  ],
-  task_reminder_rules: [
-    { id: 1, company_id: 1, trigger_condition: 'OVERDUE_15M', notify_roles: ['SUPERVISOR'], channels: ['in_app', 'email'] },
-    { id: 2, company_id: 1, trigger_condition: 'OVERDUE_60M', notify_roles: ['SUPERVISOR', 'HR'], channels: ['in_app', 'email', 'whatsapp'] }
-  ],
-  reminder_delivery_logs: [
-    {
-      id: 1,
-      company_id: 1,
-      reminder_id: 1,
-      task_id: 1,
-      user_id: 1,
-      channel: 'in_app',
-      status: 'sent',
-      sent_at: new Date(Date.now() - 3600000).toISOString(),
-      created_at: new Date(Date.now() - 3600000).toISOString()
-    },
-    {
-      id: 2,
-      company_id: 1,
-      reminder_id: 1,
-      task_id: 1,
-      user_id: 1,
-      channel: 'email',
-      status: 'sent',
-      provider_message_id: 'MSG-EML-98124',
-      sent_at: new Date(Date.now() - 3600000).toISOString(),
-      created_at: new Date(Date.now() - 3600000).toISOString()
-    }
-  ],
-  employee_idle_sessions: [
-    {
-      id: 1,
-      company_id: 1,
-      employee_id: 1,
-      user_id: 1,
-      idle_started_at: new Date(Date.now() - 7200000).toISOString(),
-      detected_at: new Date(Date.now() - 6600000).toISOString(),
-      duration_seconds: 600,
-      reason: 'Physical Meeting',
-      reason_details: 'Attending client presentation review with Senior Commercial Director',
-      status: 'explained',
-      reported_to_it_at: new Date(Date.now() - 6600000).toISOString(),
-      reported_to_hr_at: new Date(Date.now() - 6600000).toISOString(),
-      created_at: new Date(Date.now() - 6600000).toISOString()
-    }
-  ],
-  escalation_rules: [
-    { id: 1, company_id: 1, trigger_condition: 'OVERDUE_15M', notify_roles: ['SUPERVISOR'], channels: ['in_app', 'email'] },
-    { id: 2, company_id: 1, trigger_condition: 'OVERDUE_60M', notify_roles: ['SUPERVISOR', 'HR'], channels: ['in_app', 'email', 'whatsapp'] }
-  ],
-  announcements: [
-    { id: 1, title: 'EdgeWForce Enterprise Platform Active', body: 'The complete Operating System for Field Sales & Workforce Operations is now live for (c) Nexfeild 2026', audience: 'Everyone', priority: 'High', start_date: new Date().toISOString().slice(0, 10), created_at: new Date().toISOString() }
-  ],
+  tasks: [],
+  task_reminders: [],
+  task_reminder_rules: [],
+  reminder_delivery_logs: [],
+  employee_idle_sessions: [],
+  escalation_rules: [],
+  announcements: [],
   holidays: [
     { id: 1, name: "New Year's Day", date: '2026-01-01', description: 'Public Holiday', year: 2026 },
     { id: 2, name: "Workers' Day", date: '2026-05-01', description: 'International Workers Day', year: 2026 },
@@ -683,10 +217,7 @@ const initialSeed = {
   sos: [],
   idle_alerts: [],
   push_subscriptions: [],
-  notifications: [
-    { id: 1, employee_id: 1, type: 'Sales', title: 'Commission Updated', body: 'Take-Home Sales Commission is calculated at 5% for all closed orders.', read: false, created_at: new Date().toISOString() },
-    { id: 2, employee_id: 2, type: 'Field', title: 'Route Manifest Ready', body: 'You have 4 store audit stops assigned for today.', read: false, created_at: new Date().toISOString() }
-  ],
+  notifications: [],
   face_events: []
 };
 
@@ -703,38 +234,19 @@ function loadPersistedStore() {
       store.company_settings = initialSeed.company_settings;
       store.regions = initialSeed.regions;
       store.territories = initialSeed.territories;
-      store.teams = initialSeed.teams;
-      store.branches = initialSeed.branches;
-      store.warehouses = initialSeed.warehouses;
+      store.departments = initialSeed.departments;
+      store.ranks = initialSeed.ranks;
+      store.permissions = initialSeed.permissions;
       store.users = initialSeed.users;
       store.employees = initialSeed.employees;
-      store.customers = loaded.customers && loaded.customers.length >= 50 ? loaded.customers : initialSeed.customers;
-      store.products = loaded.products && loaded.products.length >= 20 ? loaded.products : initialSeed.products;
-      store.orders = loaded.orders && loaded.orders.length ? loaded.orders : initialSeed.orders;
-      store.order_items = loaded.order_items && loaded.order_items.length ? loaded.order_items : initialSeed.order_items;
-      store.order_approvals = loaded.order_approvals && loaded.order_approvals.length ? loaded.order_approvals : initialSeed.order_approvals;
-      store.deliveries = loaded.deliveries && loaded.deliveries.length ? loaded.deliveries : initialSeed.deliveries;
-      store.inventory_movements = loaded.inventory_movements && loaded.inventory_movements.length ? loaded.inventory_movements : initialSeed.inventory_movements;
-      store.collections = loaded.collections && loaded.collections.length ? loaded.collections : initialSeed.collections;
-      store.visits = loaded.visits && loaded.visits.length ? loaded.visits : initialSeed.visits;
-      store.visit_reports = loaded.visit_reports && loaded.visit_reports.length ? loaded.visit_reports : initialSeed.visit_reports;
-      store.attendance = loaded.attendance && loaded.attendance.length ? loaded.attendance : initialSeed.attendance;
-      store.alerts = loaded.alerts && loaded.alerts.length ? loaded.alerts : initialSeed.alerts;
-      store.performance_scores = loaded.performance_scores && loaded.performance_scores.length ? loaded.performance_scores : initialSeed.performance_scores;
-      store.audit_logs = loaded.audit_logs && loaded.audit_logs.length ? loaded.audit_logs : initialSeed.audit_logs;
-      store.stores = loaded.stores && loaded.stores.length ? loaded.stores : initialSeed.stores;
-      store.work_locations = loaded.work_locations && loaded.work_locations.length ? loaded.work_locations : initialSeed.work_locations;
-      store.employee_location_assignments = loaded.employee_location_assignments && loaded.employee_location_assignments.length ? loaded.employee_location_assignments : initialSeed.employee_location_assignments;
-      store.location_assignment_history = loaded.location_assignment_history && loaded.location_assignment_history.length ? loaded.location_assignment_history : initialSeed.location_assignment_history;
     } else {
       savePersistedStore();
     }
   } catch (err) {
-    logger.error('Failed to load local store file, resetting to seed', err);
+    logger.error('Failed to load local store file, resetting to clean baseline', err);
     store = JSON.parse(JSON.stringify(initialSeed));
   }
 }
-
 
 let saveTimeout = null;
 

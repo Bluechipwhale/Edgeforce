@@ -704,7 +704,7 @@ export const fieldService = {
       if (filters.status && s.status !== filters.status) return false;
       if (filters.search) {
         const q = filters.search.toLowerCase();
-        const match = s.name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q) || s.address.toLowerCase().includes(q);
+        const match = (s.name || '').toLowerCase().includes(q) || (s.code || '').toLowerCase().includes(q) || (s.address || '').toLowerCase().includes(q);
         if (!match) return false;
       }
       return true;

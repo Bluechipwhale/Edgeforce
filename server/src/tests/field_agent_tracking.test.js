@@ -11,6 +11,42 @@ import { fieldService } from '../services/fieldService.js';
 test('Field Force Tracking & Supervisor Monitoring Module Test Suite', async (t) => {
   db.resetToSeed();
 
+  // Test fixtures for isolated tracking tests
+  await db.insert('work_locations', {
+    id: 1,
+    company_id: 1,
+    name: 'Mega Plaza Victoria Island',
+    code: 'LOC-VI-01',
+    location_type: 'Store',
+    latitude: 6.4281,
+    longitude: 3.4219,
+    radius_meters: 150,
+    geofence_radius_meters: 150,
+    address: 'Mega Plaza, VI, Lagos',
+    is_active: true
+  });
+
+  await db.insert('stores', {
+    id: 1,
+    company_id: 1,
+    code: 'STR-LOS-001',
+    name: 'Mega Plaza Supermarket',
+    latitude: 6.4281,
+    longitude: 3.4219,
+    geofence_radius: 150,
+    status: 'active'
+  });
+
+  await db.insert('employee_location_assignments', {
+    id: 1,
+    company_id: 1,
+    employee_id: 5,
+    location_id: 1,
+    assignment_type: 'primary',
+    is_primary: true,
+    is_active: true
+  });
+
   await t.test('1. Field Agent Check-In inside store geofence (<= 150m) succeeds', async () => {
     // Mega Plaza: Lat 6.4281, Lng 3.4219
     const checkInResult = await fieldService.checkIn({

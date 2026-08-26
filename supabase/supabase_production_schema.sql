@@ -43,8 +43,8 @@ CREATE TABLE IF NOT EXISTS public.company_settings (
     currency TEXT DEFAULT 'NGN',
     receipt_company_name TEXT DEFAULT 'EXPERIENTIAL EDGE',
     receipt_tagline TEXT DEFAULT 'Integrated Marketing & Commercial Distribution Solutions',
-    receipt_title TEXT DEFAULT 'EDGEWFORCE SALES RECEIPT',
-    receipt_address TEXT DEFAULT 'Plot 12, Commercial Avenue, Ikeja Industrial Estate, Lagos, Nigeria',
+    receipt_title TEXT DEFAULT 'EEDGED2U SALES RECEIPT',
+    receipt_address TEXT DEFAULT 'No 15, Atiba Osborne Mende, Maryland, Lagos, Nigeria',
     receipt_phone TEXT DEFAULT '+2348006393435',
     receipt_footer_note TEXT DEFAULT 'Goods received in good condition are not returnable after 48 hours. Thank you for your business!',
     attendance_rules JSONB DEFAULT '{"require_gps": true, "require_selfie": false, "auto_checkout": true}'::jsonb,
@@ -539,7 +539,8 @@ INSERT INTO public.users (id, company_id, full_name, email, password_hash, phone
 (5, 1, 'Field Operations Lead', 'field@edgewforce.com', '$2a$10$wE9UfUa8sM3Z.Yp2T5mH5uL6L1F9n2d8Y2W8Z9V4p1Q2r3S4t5u6v', '+2348029876543', 'FIELD_AGENT', 'active'),
 (6, 1, 'Finance & Accounting Lead', 'accountant@edgewforce.com', '$2a$10$wE9UfUa8sM3Z.Yp2T5mH5uL6L1F9n2d8Y2W8Z9V4p1Q2r3S4t5u6v', '+2348000000006', 'ACCOUNTANT', 'active'),
 (7, 1, 'Field Operations Supervisor', 'supervisor@edgewforce.com', '$2a$10$wE9UfUa8sM3Z.Yp2T5mH5uL6L1F9n2d8Y2W8Z9V4p1Q2r3S4t5u6v', '+2348187654321', 'SUPERVISOR', 'active'),
-(8, 1, 'Corporate Operations Staff', 'staff@edgewforce.com', '$2a$10$wE9UfUa8sM3Z.Yp2T5mH5uL6L1F9n2d8Y2W8Z9V4p1Q2r3S4t5u6v', '+2348145550192', 'STAFF_MEMBER', 'active')
+(8, 1, 'Corporate Operations Staff', 'staff@edgewforce.com', '$2a$10$wE9UfUa8sM3Z.Yp2T5mH5uL6L1F9n2d8Y2W8Z9V4p1Q2r3S4t5u6v', '+2348145550192', 'STAFF_MEMBER', 'active'),
+(9, 1, 'Platform Super Administrator', 'admin@edgewforce.com', '$2a$10$wE9UfUa8sM3Z.Yp2T5mH5uL6L1F9n2d8Y2W8Z9V4p1Q2r3S4t5u6v', '+2348000000000', 'SUPER_ADMIN', 'active')
 ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash, role_code = EXCLUDED.role_code;
 
 INSERT INTO public.employees (id, company_id, user_id, employee_code, first_name, last_name, phone, department_id, department, position, territory, supervisor_id, rank_code, base_salary, status) VALUES
@@ -550,7 +551,8 @@ INSERT INTO public.employees (id, company_id, user_id, employee_code, first_name
 (5, 1, 5, 'EMP-1005', 'Godfrey', 'Okorie', '+2348029876543', 2, 'Field Operations', 'Field Operations Lead Agent', 'Lagos Island & Lekki', 7, 'STAFF', 350000, 'active'),
 (6, 1, 6, 'EMP-1006', 'Finance', 'Officer', '+2348000000006', 4, 'Finance & Accounts', 'Head of Accounting & Payroll', 'Headquarters', NULL, 'ACCOUNTANT', 1100000, 'active'),
 (7, 1, 7, 'EMP-1007', 'Amina', 'Bello', '+2348187654321', 2, 'Field Operations', 'Field Operations Supervisor', 'Lagos Island', NULL, 'SUPERVISOR', 750000, 'active'),
-(8, 1, 8, 'EMP-1008', 'Gloria', 'Iwuh', '+2348145550192', 3, 'Corporate Operations', 'Workforce Operations Analyst', 'Headquarters', 3, 'STAFF', 420000, 'active')
+(8, 1, 8, 'EMP-1008', 'Gloria', 'Iwuh', '+2348145550192', 3, 'Corporate Operations', 'Workforce Operations Analyst', 'Headquarters', 3, 'STAFF', 420000, 'active'),
+(9, 1, 9, 'EMP-1009', 'Platform', 'Administrator', '+2348000000000', 6, 'Executive Governance', 'Super Administrator', 'National', NULL, 'CEO', 1800000, 'active')
 ON CONFLICT (employee_code) DO NOTHING;
 
 -- Default Locations
@@ -568,5 +570,7 @@ INSERT INTO public.employee_location_assignments (company_id, employee_id, locat
 (1, 5, 1, 'primary', TRUE, TRUE),
 (1, 6, 1, 'primary', TRUE, TRUE),
 (1, 7, 1, 'primary', TRUE, TRUE),
-(1, 8, 1, 'primary', TRUE, TRUE)
+(1, 8, 1, 'primary', TRUE, TRUE),
+(1, 9, 1, 'primary', TRUE, TRUE)
+ON CONFLICT DO NOTHING;
 ON CONFLICT DO NOTHING;

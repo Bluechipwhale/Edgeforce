@@ -18,15 +18,18 @@ const cleanState = {
   companies: [
     {
       id: 1,
+      uuid: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
       name: 'Experiential Edge Nigeria Limited',
       business_type: 'Commercial Sales & Field Operations',
-      registration_number: 'RC-1849204',
+      industry: 'Field Sales Force Automation & Workforce Operations',
+      registration_number: 'RC-1849201',
       email: 'operations@edgewforce.com',
-      phone: '+2348030000001',
-      address: '15 Atiba Osborne, Mende, Maryland, Lagos, Nigeria',
+      phone: '+2348000000001',
+      address: '15 Atiba Osborne, Mende, Maryland, Lagos',
       country: 'Nigeria',
       state: 'Lagos',
       city: 'Lagos',
+      logo_url: null,
       status: 'active',
       created_at: new Date().toISOString()
     }
@@ -39,8 +42,9 @@ const cleanState = {
       working_hours_start: '08:00',
       working_hours_end: '17:00',
       geofence_radius: 150,
-      monthly_target_ngn: 10000000,
-      commission_percent: 5,
+      attendance_rules: { require_gps: true, require_selfie: false, auto_checkout: true },
+      visit_rules: { min_duration_minutes: 15, require_photo: true, require_signature: true },
+      sales_targets: { monthly_target_ngn: 10000000, commission_percent: 5 },
       currency: 'NGN',
       timezone: 'Africa/Lagos',
       active_modules: {
@@ -54,110 +58,144 @@ const cleanState = {
         delivery: true,
         reports: true,
         tracking: true
-      }
+      },
+      created_at: new Date().toISOString()
     }
   ],
-  roles: [
-    { id: 1, name: 'super_admin', description: 'Platform Super Administrator' },
-    { id: 2, name: 'agent_admin', description: 'Company Agent Administrator' },
-    { id: 3, name: 'supervisor', description: 'Field Sales Supervisor' },
-    { id: 4, name: 'sales_agent', description: 'Sales Agent' },
-    { id: 5, name: 'field_agent', description: 'Field Agent' },
-    { id: 6, name: 'hr_manager', description: 'Human Resources Manager' },
-    { id: 7, name: 'staff', description: 'General Staff Member' }
+  regions: [
+    { id: 1, company_id: 1, code: 'SW', name: 'South-West Region (Lagos & Ogun)', description: 'Primary commercial hub and retail corridor' },
+    { id: 2, company_id: 1, code: 'NC', name: 'North-Central Region (Abuja & Plateau)', description: 'Federal capital territory and northern gateway' },
+    { id: 3, company_id: 1, code: 'SS', name: 'South-South / South-East (Rivers & Enugu)', description: 'Oil hub and eastern trade networks' }
+  ],
+  territories: [
+    { id: 1, company_id: 1, region_id: 1, code: 'LAG-MAIN', name: 'Lagos Mainland' },
+    { id: 2, company_id: 1, region_id: 1, code: 'LAG-ISL', name: 'Lagos Island & Lekki' },
+    { id: 3, company_id: 1, region_id: 1, code: 'LAG-IKJ', name: 'Ikeja & Industrial' },
+    { id: 4, company_id: 1, region_id: 2, code: 'ABJ-CEN', name: 'Abuja Central' },
+    { id: 5, company_id: 1, region_id: 3, code: 'PH-METRO', name: 'Port Harcourt Metro' },
+    { id: 6, company_id: 1, region_id: 2, code: 'KAN-URB', name: 'Kano Urban' }
+  ],
+  teams: [],
+  branches: [],
+  warehouses: [],
+  departments: [
+    { id: 1, name: 'Commercial Sales', code: 'SALES', description: 'Retail distribution & accounts' },
+    { id: 2, name: 'Field Operations', code: 'FIELD', description: 'Store audits & route execution' },
+    { id: 3, name: 'Human Resources', code: 'HR', description: 'People operations & welfare' },
+    { id: 4, name: 'Finance & Accounts', code: 'FINANCE', description: 'Treasury, collections & payroll' },
+    { id: 5, name: 'Technology & IT', code: 'TECH', description: 'Portal administration, security & telemetry' },
+    { id: 6, name: 'Executive Management', code: 'EXEC', description: 'Strategic leadership' }
   ],
   ranks: [
-    { id: 1, code: 'CEO', name: 'Chief Executive Officer', level: 1, description: 'Executive Leadership' },
-    { id: 2, code: 'CTO', name: 'Chief Technology Officer', level: 2, description: 'Technology & Infrastructure' },
-    { id: 3, code: 'HR', name: 'Head of People & HR', level: 3, description: 'Human Resources & Talent' },
-    { id: 4, code: 'SENIOR_ACCOUNTANT', name: 'Head of Finance & Accounts', level: 4, description: 'Financial Governance' },
-    { id: 5, code: 'EXECUTIVE_DIRECTOR', name: 'Commercial Operations Director', level: 5, description: 'Commercial Strategy' },
-    { id: 6, code: 'MANAGER', name: 'Territory Sales Manager', level: 6, description: 'Area Commercial Operations' },
-    { id: 7, code: 'SUPERVISOR', name: 'Field Operations Supervisor', level: 7, description: 'Field Force Management' },
-    { id: 8, code: 'STAFF', name: 'Operational Field / Sales Agent', level: 8, description: 'Field Execution & Sales' }
+    { id: 1, code: 'CEO', name: 'Chief Executive Officer', level: 1, active: true },
+    { id: 2, code: 'IT_ADMIN', name: 'IT Super Admin / Portal Administrator', level: 1, active: true },
+    { id: 3, code: 'CTO', name: 'Chief Technology Officer', level: 2, active: true },
+    { id: 4, code: 'HR', name: 'Head of Human Resources', level: 3, active: true },
+    { id: 5, code: 'SENIOR_ACCOUNTANT', name: 'Head of Accounting & Payroll', level: 4, active: true },
+    { id: 6, code: 'ACCOUNTANT', name: 'Accountant', level: 5, active: true },
+    { id: 7, code: 'MANAGER', name: 'Regional Manager', level: 6, active: true },
+    { id: 8, code: 'SUPERVISOR', name: 'Field Operations Supervisor', level: 7, active: true },
+    { id: 9, code: 'STAFF', name: 'Operations Staff', level: 8, active: true }
+  ],
+  permissions: [
+    { id: 1, code: 'view_dashboard', name: 'View Dashboard', category: 'General' },
+    { id: 2, code: 'view_employees', name: 'View Employees', category: 'HR' },
+    { id: 3, code: 'create_employee', name: 'Create Employee', category: 'HR' },
+    { id: 4, code: 'edit_employee', name: 'Edit Employee', category: 'HR' },
+    { id: 5, code: 'assign_tasks', name: 'Assign Tasks', category: 'Tasks' },
+    { id: 6, code: 'approve_leave', name: 'Approve Leave', category: 'HR' },
+    { id: 7, code: 'view_payroll', name: 'View Payroll', category: 'Finance' },
+    { id: 8, code: 'manage_payroll', name: 'Manage Payroll', category: 'Finance' },
+    { id: 9, code: 'view_attendance', name: 'View Attendance', category: 'HR' },
+    { id: 10, code: 'manage_attendance', name: 'Manage Attendance', category: 'HR' },
+    { id: 11, code: 'view_idle_reports', name: 'View Idle Reports', category: 'HR' },
+    { id: 12, code: 'manage_ranks', name: 'Manage Ranks', category: 'HR' },
+    { id: 13, code: 'view_sales', name: 'View Sales', category: 'Sales' },
+    { id: 14, code: 'create_orders', name: 'Create Orders', category: 'Sales' },
+    { id: 15, code: 'record_collections', name: 'Record Collections', category: 'Sales' },
+    { id: 16, code: 'view_customers', name: 'View Customers', category: 'Sales' },
+    { id: 17, code: 'create_customers', name: 'Create Customers', category: 'Sales' },
+    { id: 18, code: 'view_field_operations', name: 'View Field Operations', category: 'Field' },
+    { id: 19, code: 'manage_routes', name: 'Manage Routes', category: 'Field' },
+    { id: 20, code: 'view_sos', name: 'View SOS Alerts', category: 'Emergency' },
+    { id: 21, code: 'resolve_sos', name: 'Resolve SOS Alerts', category: 'Emergency' },
+    { id: 22, code: 'manage_products', name: 'Manage Products', category: 'Inventory' },
+    { id: 23, code: 'view_competitors', name: 'View Competitor Intel', category: 'Marketing' },
+    { id: 24, code: 'view_reports', name: 'View Reports', category: 'Executive' },
+    { id: 25, code: 'admin_portal', name: 'Super Admin Portal Access', category: 'IT' }
   ],
   users: [
-    { id: 1, email: 'ceo@edgewforce.com', password_hash: passwordHash, full_name: 'Chief Executive Officer', role_code: 'super_admin', company_id: 1, status: 'active', created_at: new Date().toISOString() },
-    { id: 2, email: 'it@edgewforce.com', password_hash: passwordHash, full_name: 'IT System Administrator', role_code: 'super_admin', company_id: 1, status: 'active', created_at: new Date().toISOString() },
-    { id: 3, email: 'hr@edgewforce.com', password_hash: passwordHash, full_name: 'HR & People Manager', role_code: 'hr_manager', company_id: 1, status: 'active', created_at: new Date().toISOString() },
-    { id: 4, email: 'admin@edgewforce.com', password_hash: passwordHash, full_name: 'Platform Super Administrator', role_code: 'super_admin', company_id: 1, status: 'active', created_at: new Date().toISOString() }
-  ],
-  profiles: [
-    { id: '11111111-1111-4111-a111-111111111111', company_id: 1, first_name: 'Chief Executive', last_name: 'Officer', phone: '+2348030000001', status: 'active' },
-    { id: '22222222-2222-4222-a222-222222222222', company_id: 1, first_name: 'IT', last_name: 'Administrator', phone: '+2348030000002', status: 'active' },
-    { id: '33333333-3333-4333-a333-333333333333', company_id: 1, first_name: 'HR', last_name: 'Manager', phone: '+2348030000003', status: 'active' },
-    { id: '44444444-4444-4444-a444-444444444444', company_id: 1, first_name: 'Super', last_name: 'Admin', phone: '+2348030000004', status: 'active' }
+    { id: 1, company_id: 1, full_name: 'IT Super Admin', email: 'it@edgewforce.com', password_hash: passwordHash, phone: '+2348000000001', role_code: 'SUPER_ADMIN', status: 'active', created_at: new Date().toISOString() },
+    { id: 2, company_id: 1, full_name: 'Chief Executive Officer', email: 'ceo@edgewforce.com', password_hash: passwordHash, phone: '+2348000000002', role_code: 'CEO', status: 'active', created_at: new Date().toISOString() },
+    { id: 3, company_id: 1, full_name: 'Head of Human Resources', email: 'hr@edgewforce.com', password_hash: passwordHash, phone: '+2348000000003', role_code: 'HR_MANAGER', status: 'active', created_at: new Date().toISOString() },
+    { id: 4, company_id: 1, full_name: 'Commercial Sales Lead', email: 'sales@edgewforce.com', password_hash: passwordHash, phone: '+2348031234567', role_code: 'SALES_AGENT', status: 'active', created_at: new Date().toISOString() },
+    { id: 5, company_id: 1, full_name: 'Field Operations Lead', email: 'field@edgewforce.com', password_hash: passwordHash, phone: '+2348029876543', role_code: 'FIELD_AGENT', status: 'active', created_at: new Date().toISOString() },
+    { id: 6, company_id: 1, full_name: 'Finance & Accounting Lead', email: 'accountant@edgewforce.com', password_hash: passwordHash, phone: '+2348000000006', role_code: 'ACCOUNTANT', status: 'active', created_at: new Date().toISOString() },
+    { id: 7, company_id: 1, full_name: 'Field Operations Supervisor', email: 'supervisor@edgewforce.com', password_hash: passwordHash, phone: '+2348187654321', role_code: 'SUPERVISOR', status: 'active', created_at: new Date().toISOString() },
+    { id: 8, company_id: 1, full_name: 'Corporate Operations Staff', email: 'staff@edgewforce.com', password_hash: passwordHash, phone: '+2348145550192', role_code: 'STAFF_MEMBER', status: 'active', created_at: new Date().toISOString() },
+    { id: 9, company_id: 1, full_name: 'Platform Super Administrator', email: 'admin@edgewforce.com', password_hash: passwordHash, phone: '+2348000000000', role_code: 'SUPER_ADMIN', status: 'active', created_at: new Date().toISOString() }
   ],
   employees: [
-    { id: '11111111-1111-4111-a111-111111111111', user_id: 1, company_id: 1, role_id: 1, employee_code: 'EMP-001', first_name: 'Chief Executive', last_name: 'Officer', department: 'Executive Management', job_title: 'Chief Executive Officer', position: 'Chief Executive Officer', rank_code: 'CEO', base_salary: 2500000, housing_allowance: 500000, transport_allowance: 300000, status: 'active' },
-    { id: '22222222-2222-4222-a222-222222222222', user_id: 2, company_id: 1, role_id: 1, employee_code: 'EMP-002', first_name: 'IT', last_name: 'Administrator', department: 'Information Technology', job_title: 'IT Administrator', position: 'IT Administrator', rank_code: 'CTO', reporting_manager_id: 1, base_salary: 1200000, housing_allowance: 250000, transport_allowance: 150000, status: 'active' },
-    { id: '33333333-3333-4333-a333-333333333333', user_id: 3, company_id: 1, role_id: 6, employee_code: 'EMP-003', first_name: 'HR', last_name: 'Manager', department: 'Human Resources', job_title: 'HR Manager', position: 'People Operations Manager', rank_code: 'HR', reporting_manager_id: 1, base_salary: 1100000, housing_allowance: 200000, transport_allowance: 150000, status: 'active' },
-    { id: '44444444-4444-4444-a444-444444444444', user_id: 4, company_id: 1, role_id: 1, employee_code: 'EMP-004', first_name: 'Super', last_name: 'Admin', department: 'Executive Governance', job_title: 'Super Administrator', position: 'Super Administrator', rank_code: 'CEO', reporting_manager_id: 1, base_salary: 1500000, housing_allowance: 300000, transport_allowance: 200000, status: 'active' }
+    { id: 1, company_id: 1, user_id: 1, employee_code: 'EMP-1001', first_name: 'IT Admin', last_name: 'Service', phone: '+2348000000001', department_id: 5, department: 'Technology & IT', position: 'IT Super Admin / System Engineer', territory: 'Headquarters', rank_code: 'IT_ADMIN', base_salary: 1800000, performance_score: 98.0, status: 'active' },
+    { id: 2, company_id: 1, user_id: 2, employee_code: 'EMP-1002', first_name: 'Executive', last_name: 'Management', phone: '+2348000000002', department_id: 6, department: 'Executive Management', position: 'Chief Executive Officer', territory: 'National', rank_code: 'CEO', base_salary: 2500000, performance_score: 99.0, status: 'active' },
+    { id: 3, company_id: 1, user_id: 3, employee_code: 'EMP-1003', first_name: 'HR', last_name: 'Manager', phone: '+2348000000003', department_id: 3, department: 'Human Resources', position: 'Head of Human Resources', territory: 'Headquarters', rank_code: 'HR', base_salary: 1200000, performance_score: 95.0, status: 'active' },
+    { id: 4, company_id: 1, user_id: 4, employee_code: 'EMP-1004', first_name: 'Thompson', last_name: 'Babatunde', phone: '+2348031234567', department_id: 1, department: 'Commercial Sales', position: 'Senior Commercial Sales Agent', territory: 'Lagos Mainland', supervisor_id: 7, rank_code: 'STAFF', base_salary: 380000, performance_score: 92.5, status: 'active' },
+    { id: 5, company_id: 1, user_id: 5, employee_code: 'EMP-1005', first_name: 'Godfrey', last_name: 'Okorie', phone: '+2348029876543', department_id: 2, department: 'Field Operations', position: 'Field Operations Lead Agent', territory: 'Lagos Island & Lekki', supervisor_id: 7, rank_code: 'STAFF', base_salary: 350000, performance_score: 88.0, status: 'active' },
+    { id: 6, company_id: 1, user_id: 6, employee_code: 'EMP-1006', first_name: 'Finance', last_name: 'Officer', phone: '+2348000000006', department_id: 4, department: 'Finance & Accounts', position: 'Head of Accounting & Payroll', territory: 'Headquarters', rank_code: 'ACCOUNTANT', base_salary: 1100000, performance_score: 90.0, status: 'active' },
+    { id: 7, company_id: 1, user_id: 7, employee_code: 'EMP-1007', first_name: 'Amina', last_name: 'Bello', phone: '+2348187654321', department_id: 2, department: 'Field Operations', position: 'Field Operations Supervisor', territory: 'Lagos Island', rank_code: 'SUPERVISOR', base_salary: 750000, performance_score: 96.0, status: 'active' },
+    { id: 8, company_id: 1, user_id: 8, employee_code: 'EMP-1008', first_name: 'Gloria', last_name: 'Iwuh', phone: '+2348145550192', department_id: 3, department: 'Corporate Operations', position: 'Workforce Operations Analyst', territory: 'Headquarters', supervisor_id: 3, rank_code: 'STAFF', base_salary: 420000, performance_score: 85.0, status: 'active' },
+    { id: 9, company_id: 1, user_id: 9, employee_code: 'EMP-1009', first_name: 'Platform', last_name: 'Administrator', phone: '+2348000000000', department_id: 6, department: 'Executive Governance', position: 'Super Administrator', territory: 'National', rank_code: 'CEO', base_salary: 1800000, performance_score: 99.0, status: 'active' }
   ],
-  markets: [
-    { id: 1, company_id: 1, name: 'Lagos Central Commercial Zone', code: 'MKT-LOS-01', state: 'Lagos', city: 'Ikeja', address: 'Commercial Layout, Ikeja', status: 'active' },
-    { id: 2, company_id: 1, name: 'Lekki & Island Trade Corridor', code: 'MKT-LOS-02', state: 'Lagos', city: 'Lekki', address: 'Lekki Expressway Corridor', status: 'active' }
-  ],
-  stores: [
-    { id: 1, company_id: 1, market_id: 1, name: 'Ikeja Central Retail Hub', code: 'STR-LOS-001', owner_name: 'Alhaji Musa Gbadamosi', phone: '+2348021112233', address: 'Plot 4 Commercial Avenue, Ikeja', state: 'Lagos', city: 'Ikeja', latitude: 6.5984, longitude: 3.3524, geofence_radius_meters: 150, status: 'active' },
-    { id: 2, company_id: 1, market_id: 2, name: 'Lekki Palms Supercenter', code: 'STR-LOS-002', owner_name: 'Mrs. Folake Adeleke', phone: '+2348023334455', address: 'Block 12 Expressway Corridor, Lekki', state: 'Lagos', city: 'Lekki', latitude: 6.4281, longitude: 3.4219, geofence_radius_meters: 150, status: 'active' }
-  ],
-  warehouses: [
-    { id: 1, company_id: 1, name: 'Ikeja Central Depot', code: 'WH-IKJ-01', address: 'Plot 4 Commercial Avenue, Ikeja Industrial Estate, Lagos', city: 'Ikeja', state: 'Lagos', status: 'active' },
-    { id: 2, company_id: 1, name: 'Lekki Distribution Hub', code: 'WH-LKK-02', address: 'Block 12 Expressway Corridor, Lekki Phase 1, Lagos', city: 'Lekki', state: 'Lagos', status: 'active' },
-    { id: 3, company_id: 1, name: 'Abuja Regional Depot', code: 'WH-ABJ-03', address: 'Industrial Layout Phase 2, Idu Industrial Area, Abuja', city: 'Abuja', state: 'FCT', status: 'active' }
-  ],
-  products: [
-    { id: 1, company_id: 1, sku: 'SKU-001', name: 'Golden Penny Pure Vegetable Oil (5 Litres)', description: 'Premium edible vegetable oil', category: 'Cooking Oils & Fats', brand: 'Golden Penny', unit: 'carton', cost_price: 15000, selling_price: 18500, price: 18500, reorder_level: 25, status: 'active', warehouse_name: 'Ikeja Central Depot', shelve_location: 'Aisle 1 - Bay A (Rack 1)' },
-    { id: 2, company_id: 1, sku: 'SKU-002', name: 'Dangote Refined Granulated Sugar (50kg Bag)', description: 'Fortified granulated white sugar', category: 'Sugar & Sweeteners', brand: 'Dangote', unit: 'bag', cost_price: 60000, selling_price: 68000, price: 68000, reorder_level: 15, status: 'active', warehouse_name: 'Ikeja Central Depot', shelve_location: 'Aisle 2 - Bay C (Pallet 3)' },
-    { id: 3, company_id: 1, sku: 'SKU-003', name: 'Indomie Instant Noodles Super Pack (40 x 120g)', description: 'Instant noodles super pack carton', category: 'Packaged Food', brand: 'Indomie', unit: 'carton', cost_price: 12000, selling_price: 14200, price: 14200, reorder_level: 40, status: 'active', warehouse_name: 'Lekki Distribution Hub', shelve_location: 'Aisle 3 - Bay B (Rack 2)' }
-  ],
-  inventory: [
-    { id: 1, company_id: 1, product_id: 1, store_id: 1, quantity: 120, reserved_quantity: 0, available_quantity: 120, last_restocked_at: new Date().toISOString() },
-    { id: 2, company_id: 1, product_id: 2, store_id: 1, quantity: 45, reserved_quantity: 0, available_quantity: 45, last_restocked_at: new Date().toISOString() },
-    { id: 3, company_id: 1, product_id: 3, store_id: 2, quantity: 200, reserved_quantity: 0, available_quantity: 200, last_restocked_at: new Date().toISOString() }
-  ],
-  attendance: [],
-  field_visits: [],
-  visits: [],
-  sales: [],
-  sale_items: [],
+  customers: [],
+  products: [],
   orders: [],
-  tasks: [],
-  expenses: [],
-  notifications: [
-    {
-      id: 1,
-      company_id: 1,
-      user_id: '11111111-1111-4111-a111-111111111111',
-      title: 'Canonical Database Architecture Active',
-      message: 'EdgeWForce canonical database schema is synchronized with Supabase PostgreSQL.',
-      type: 'general',
-      is_read: false,
-      created_at: new Date().toISOString()
-    }
-  ],
-  audit_logs: [],
+  order_items: [],
+  order_approvals: [],
   collections: [],
   deliveries: [],
+  inventory_movements: [],
+  visits: [],
+  visit_reports: [],
+  attendance: [],
+  location_tracking: [],
+  alerts: [],
+  performance_scores: [],
+  audit_logs: [],
+  stores: [],
+  store_requests: [],
+  work_locations: [],
+  employee_location_assignments: [],
+  location_assignment_history: [],
+  location_logs: [],
+  field_activities: [],
+  sales_activities: [],
+  location_alerts: [],
+  daily_summaries: [],
+  leave_balances: [],
   leave_requests: [],
-  idle_alerts: [],
-  sos: [],
-  announcements: [
-    {
-      id: 1,
-      company_id: 1,
-      title: 'Welcome to EdgeWForce Corporate Platform',
-      message: 'EdgeWForce is fully deployed and configured for Experiential Edge Nigeria Limited field sales, supply chain, and workforce operations.',
-      category: 'General',
-      priority: 'HIGH',
-      target_audience: 'ALL',
-      author_name: 'Executive Management',
-      pinned: true,
-      created_at: new Date().toISOString()
-    }
+  payslips: [],
+  okrs: [],
+  tasks: [],
+  task_reminders: [],
+  task_reminder_rules: [],
+  reminder_delivery_logs: [],
+  employee_idle_sessions: [],
+  escalation_rules: [],
+  announcements: [],
+  holidays: [
+    { id: 1, name: "New Year's Day", date: '2026-01-01', description: 'Public Holiday', year: 2026 },
+    { id: 2, name: "Workers' Day", date: '2026-05-01', description: 'International Workers Day', year: 2026 },
+    { id: 3, name: "Democracy Day", date: '2026-06-12', description: 'Democracy Day', year: 2026 },
+    { id: 4, name: "Independence Day", date: '2026-10-01', description: 'National Independence Day', year: 2026 },
+    { id: 5, name: "Christmas Day", date: '2026-12-25', description: 'Christmas Day', year: 2026 },
+    { id: 6, name: "Boxing Day", date: '2026-12-26', description: 'Boxing Day', year: 2026 }
   ],
-  inventory_movements: []
+  settlements: [],
+  sos: [],
+  idle_alerts: [],
+  push_subscriptions: [],
+  notifications: [],
+  face_events: []
 };
 
 if (!fs.existsSync(dataDir)) {

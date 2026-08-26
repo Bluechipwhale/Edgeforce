@@ -1,4 +1,4 @@
-﻿{
+{
   "version": 2,
   "buildCommand": "npm --workspace client run build",
   "outputDirectory": "client/dist",
@@ -37,12 +37,6 @@
           "value": "strict-origin-when-cross-origin"
         }
       ]
-    }
-  ],
-  "crons": [
-    {
-      "path": "/api/tasks/worker/cycle",
-      "schedule": "*/10 * * * *"
     }
   ]
 }
