@@ -8,7 +8,8 @@ import {
   Calendar,
   Users,
   ShieldAlert,
-  Sparkles
+  User,
+  Building2
 } from 'lucide-react';
 
 export default function BottomNav({ user, currentTab, onSelectTab }) {
@@ -16,33 +17,35 @@ export default function BottomNav({ user, currentTab, onSelectTab }) {
 
   let items = [];
 
-  if (role === 'SALES_AGENT') {
+  if (role === 'SALES_AGENT' || role === 'BRAND_AMBASSADOR' || role === 'PROMOTER') {
     items = [
-      { id: 'overview', label: 'Cockpit', icon: LayoutDashboard },
-      { id: 'orders', label: 'POS', icon: ShoppingCart },
-      { id: 'customers', label: 'Merchants', icon: Users },
-      { id: 'copilot', label: 'Copilot', icon: Sparkles }
+      { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { id: 'attendance', label: 'Attendance', icon: Clock },
+      { id: 'sales', label: 'Sales', icon: ShoppingCart },
+      { id: 'customers', label: 'Stores', icon: Building2 },
+      { id: 'safety', label: 'SOS', icon: ShieldAlert, danger: true }
     ];
   } else if (role === 'FIELD_AGENT') {
     items = [
-      { id: 'manifest', label: 'Routes', icon: MapPin },
-      { id: 'shift', label: 'Shift', icon: Clock },
-      { id: 'audits', label: 'Audits', icon: ClipboardCheck },
-      { id: 'sos', label: 'SOS', icon: ShieldAlert, danger: true }
-    ];
-  } else if (['HR', 'CEO', 'CTO', 'MANAGER'].includes(role) || ['CEO', 'CTO', 'HR'].includes(user?.rank?.code)) {
-    items = [
-      { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+      { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
       { id: 'attendance', label: 'Attendance', icon: Clock },
-      { id: 'leave', label: 'Leave', icon: Calendar },
-      { id: 'people', label: 'Staff', icon: Users }
+      { id: 'manifest', label: 'Routes', icon: MapPin },
+      { id: 'audits', label: 'Audits', icon: ClipboardCheck },
+      { id: 'safety', label: 'SOS', icon: ShieldAlert, danger: true }
+    ];
+  } else if (['HR', 'HR_MANAGER', 'CEO', 'CTO', 'MANAGER', 'SUPER_ADMIN', 'ADMIN'].includes(role) || ['CEO', 'CTO', 'HR'].includes(user?.rank?.code)) {
+    items = [
+      { id: 'command_center', label: 'Command', icon: LayoutDashboard },
+      { id: 'supervisor_dashboard', label: 'Radar', icon: MapPin },
+      { id: 'people', label: 'Staff', icon: Users },
+      { id: 'safety', label: 'SOS Queue', icon: ShieldAlert }
     ];
   } else {
     items = [
-      { id: 'home', label: 'Home', icon: LayoutDashboard },
-      { id: 'attendance', label: 'Clock', icon: Clock },
-      { id: 'leave', label: 'Leave', icon: Calendar },
-      { id: 'tasks', label: 'Tasks', icon: ClipboardCheck }
+      { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { id: 'attendance', label: 'Timesheet', icon: Clock },
+      { id: 'tasks', label: 'Tasks', icon: ClipboardCheck },
+      { id: 'profile', label: 'Profile', icon: User }
     ];
   }
 
@@ -55,9 +58,9 @@ export default function BottomNav({ user, currentTab, onSelectTab }) {
           <button
             key={item.id}
             onClick={() => onSelectTab(item.id)}
-            className={`flex flex-col items-center justify-center py-1 px-3 rounded-lg text-[10px] font-bold transition ${
+            className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-lg text-[10px] font-bold transition ${
               item.danger
-                ? 'text-rose-500'
+                ? 'text-rose-500 hover:text-rose-600'
                 : isActive
                 ? 'text-orange-600 dark:text-orange-400'
                 : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'

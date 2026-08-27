@@ -271,7 +271,8 @@ export const salesService = {
     const products = await db.find('products');
 
     return orders.filter(o => {
-      if (filters.sales_agent_id && Number(o.sales_agent_id) !== Number(filters.sales_agent_id)) return false;
+      const filterAgentId = filters.sales_agent_id || filters.agent_id;
+      if (filterAgentId && Number(o.sales_agent_id || o.agent_id) !== Number(filterAgentId)) return false;
       if (filters.status && filters.status !== 'all' && o.status !== filters.status) return false;
       if (filters.customer_id && Number(o.customer_id) !== Number(filters.customer_id)) return false;
       return true;

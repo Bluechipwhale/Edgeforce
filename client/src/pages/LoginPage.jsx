@@ -237,14 +237,9 @@ export default function LoginPage({ onLogin, onNavigatePublic }) {
             </button>
           </form>
 
-          <div className="pt-4 border-t border-zinc-900 flex items-center justify-between text-xs text-zinc-500">
+          <div className="pt-4 border-t border-zinc-900 flex flex-col sm:flex-row items-center justify-between text-xs text-zinc-500 gap-2">
             <span>Corporate Access Only</span>
-            <button
-              onClick={() => onNavigatePublic?.('landing')}
-              className="text-zinc-400 hover:text-white transition"
-            >
-              Back to Overview
-            </button>
+            <span className="text-[11px] text-zinc-400 font-semibold">&copy; Nexfeild. edgewforce.com</span>
           </div>
         </div>
       </div>

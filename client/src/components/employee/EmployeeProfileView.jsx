@@ -1,6 +1,25 @@
+// ==============================================================================
+// EDGEWFORCE - EMPLOYEE & AGENT SECURE PROFILE VIEW
+// ==============================================================================
+
 import React, { useState, useEffect } from 'react';
-import { User, Phone, Mail, MapPin, Briefcase, Calendar, CreditCard, HeartPulse, Sparkles, KeyRound, Shield, CheckCircle2 } from 'lucide-react';
-import { formatMoney, formatDate } from '../../lib/formatters';
+import {
+  User,
+  Phone,
+  Mail,
+  MapPin,
+  Briefcase,
+  Calendar,
+  CreditCard,
+  HeartPulse,
+  KeyRound,
+  Shield,
+  CheckCircle2,
+  Lock,
+  X,
+  Building2,
+  Compass
+} from 'lucide-react';
 import { api } from '../../lib/api';
 
 export default function EmployeeProfileView({ user }) {
@@ -58,9 +77,10 @@ export default function EmployeeProfileView({ user }) {
   };
 
   const emp = profile || user?.employee || {};
+  const isAgent = (user?.role_code || '').includes('AGENT') || ['PROMOTER', 'BRAND_AMBASSADOR'].includes(user?.role_code);
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
+    <div className="max-w-4xl mx-auto space-y-6 animate-fade-in p-4 sm:p-6">
       
       {/* Header Profile Banner */}
       <div className="surface-card rounded-2xl p-6 border border-zinc-200 dark:border-zinc-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -82,8 +102,10 @@ export default function EmployeeProfileView({ user }) {
                 {emp.employee_code || `EMP-${user?.id}`}
               </span>
             </div>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-              {emp.position || 'Corporate Staff'} • {emp.department || 'Operations'} ({emp.work_location || 'Lagos HQ'})
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 flex items-center gap-2">
+              <span>{emp.position || user?.role_code?.replace('_', ' ') || 'Field Operator'}</span>
+              <span>•</span>
+              <span>{emp.department || 'Commercial Operations'}</span>
             </p>
           </div>
         </div>
@@ -97,6 +119,71 @@ export default function EmployeeProfileView({ user }) {
         </button>
       </div>
 
+      {/* Protected Organizational Assignments (Read-Only) */}
+      <div className="surface-card rounded-2xl p-5 border border-zinc-200 dark:border-zinc-800 space-y-3">
+        <div className="flex items-center justify-between border-b border-zinc-200/60 dark:border-zinc-800/60 pb-2.5">
+          <div className="flex items-center gap-2 font-bold text-sm text-zinc-900 dark:text-zinc-100">
+            <Lock size={15} className="text-amber-500" />
+            <span>Organizational & Hierarchy Assignments (Read-Only)</span>
+          </div>
+          <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+            Protected By Enterprise RBAC
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs pt-1">
+          <div>
+            <div className="text-[10px] uppercase font-bold text-zinc-400">Employee ID</div>
+            <div className="font-bold text-zinc-800 dark:text-zinc-200 mt-0.5 font-mono">
+              {emp.staff_id || emp.employee_code || `EMP-${user?.id}`}
+            </div>
+          </div>
+          <div>
+            <div className="text-[10px] uppercase font-bold text-zinc-400">Assigned Role</div>
+            <div className="font-bold text-zinc-800 dark:text-zinc-200 mt-0.5">
+              {user?.role_code || 'STAFF'}
+            </div>
+          </div>
+          <div>
+            <div className="text-[10px] uppercase font-bold text-zinc-400">Assigned Location</div>
+            <div className="font-bold text-zinc-800 dark:text-zinc-200 mt-0.5">
+              {emp.assigned_location || emp.work_location || 'Lagos Central'}
+            </div>
+          </div>
+          <div>
+            <div className="text-[10px] uppercase font-bold text-zinc-400">Assigned Supervisor</div>
+            <div className="font-bold text-zinc-800 dark:text-zinc-200 mt-0.5">
+              {emp.supervisor_name || 'Regional Operations Lead'}
+            </div>
+          </div>
+          <div>
+            <div className="text-[10px] uppercase font-bold text-zinc-400">Department</div>
+            <div className="font-semibold text-zinc-800 dark:text-zinc-200 mt-0.5">
+              {emp.department || 'Field Operations'}
+            </div>
+          </div>
+          <div>
+            <div className="text-[10px] uppercase font-bold text-zinc-400">Assigned Territory</div>
+            <div className="font-semibold text-zinc-800 dark:text-zinc-200 mt-0.5">
+              {emp.territory || emp.city_lga || emp.state_of_residence || 'Lagos State'}
+            </div>
+          </div>
+          <div>
+            <div className="text-[10px] uppercase font-bold text-zinc-400">Employment Status</div>
+            <div className="font-semibold text-emerald-600 dark:text-emerald-400 mt-0.5 flex items-center gap-1">
+              <CheckCircle2 size={12} />
+              <span>{emp.employment_status || 'Active'}</span>
+            </div>
+          </div>
+          <div>
+            <div className="text-[10px] uppercase font-bold text-zinc-400">Date Joined</div>
+            <div className="font-semibold text-zinc-800 dark:text-zinc-200 mt-0.5">
+              {emp.date_of_joining || emp.hire_date || '—'}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Profile Details Sections */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         
@@ -104,7 +191,7 @@ export default function EmployeeProfileView({ user }) {
         <div className="surface-card rounded-2xl p-5 border border-zinc-200 dark:border-zinc-800 space-y-3">
           <div className="flex items-center gap-2 font-bold text-sm text-zinc-900 dark:text-zinc-100 border-b border-zinc-200/60 dark:border-zinc-800/60 pb-2">
             <User size={15} className="text-orange-500" />
-            <span>Personal Information</span>
+            <span>Personal Details</span>
           </div>
           <div className="grid grid-cols-2 gap-3 text-xs">
             <div>
@@ -130,11 +217,11 @@ export default function EmployeeProfileView({ user }) {
         <div className="surface-card rounded-2xl p-5 border border-zinc-200 dark:border-zinc-800 space-y-3">
           <div className="flex items-center gap-2 font-bold text-sm text-zinc-900 dark:text-zinc-100 border-b border-zinc-200/60 dark:border-zinc-800/60 pb-2">
             <Phone size={15} className="text-orange-500" />
-            <span>Contact & Location</span>
+            <span>Official Contact & Address</span>
           </div>
           <div className="grid grid-cols-2 gap-3 text-xs">
             <div>
-              <div className="text-[10px] uppercase font-bold text-zinc-400">Work Email</div>
+              <div className="text-[10px] uppercase font-bold text-zinc-400">Official Work Email</div>
               <div className="font-semibold text-zinc-800 dark:text-zinc-200 mt-0.5 break-all">{emp.work_email || user?.email || '—'}</div>
             </div>
             <div>
@@ -142,70 +229,8 @@ export default function EmployeeProfileView({ user }) {
               <div className="font-semibold text-zinc-800 dark:text-zinc-200 mt-0.5 font-mono">{emp.phone || user?.phone || '—'}</div>
             </div>
             <div className="col-span-2">
-              <div className="text-[10px] uppercase font-bold text-zinc-400">Home Address</div>
+              <div className="text-[10px] uppercase font-bold text-zinc-400">Residential Address</div>
               <div className="font-semibold text-zinc-800 dark:text-zinc-200 mt-0.5">{emp.home_address || emp.address || '—'}</div>
-            </div>
-            <div>
-              <div className="text-[10px] uppercase font-bold text-zinc-400">City / LGA</div>
-              <div className="font-semibold text-zinc-800 dark:text-zinc-200 mt-0.5">{emp.city_lga || '—'}</div>
-            </div>
-            <div>
-              <div className="text-[10px] uppercase font-bold text-zinc-400">State</div>
-              <div className="font-semibold text-zinc-800 dark:text-zinc-200 mt-0.5">{emp.state_of_origin || emp.state_of_residence || '—'}</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Employment & Reporting */}
-        <div className="surface-card rounded-2xl p-5 border border-zinc-200 dark:border-zinc-800 space-y-3">
-          <div className="flex items-center gap-2 font-bold text-sm text-zinc-900 dark:text-zinc-100 border-b border-zinc-200/60 dark:border-zinc-800/60 pb-2">
-            <Briefcase size={15} className="text-orange-500" />
-            <span>Employment & Management</span>
-          </div>
-          <div className="grid grid-cols-2 gap-3 text-xs">
-            <div>
-              <div className="text-[10px] uppercase font-bold text-zinc-400">Position</div>
-              <div className="font-semibold text-zinc-800 dark:text-zinc-200 mt-0.5">{emp.position || '—'}</div>
-            </div>
-            <div>
-              <div className="text-[10px] uppercase font-bold text-zinc-400">Department</div>
-              <div className="font-semibold text-zinc-800 dark:text-zinc-200 mt-0.5">{emp.department || '—'}</div>
-            </div>
-            <div>
-              <div className="text-[10px] uppercase font-bold text-zinc-400">Date Joined</div>
-              <div className="font-semibold text-zinc-800 dark:text-zinc-200 mt-0.5">{emp.date_of_joining || emp.hire_date || '—'}</div>
-            </div>
-            <div>
-              <div className="text-[10px] uppercase font-bold text-zinc-400">Supervisor</div>
-              <div className="font-semibold text-zinc-800 dark:text-zinc-200 mt-0.5">{emp.supervisor_name || '—'}</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Emergency Contacts & Banking */}
-        <div className="surface-card rounded-2xl p-5 border border-zinc-200 dark:border-zinc-800 space-y-3">
-          <div className="flex items-center gap-2 font-bold text-sm text-zinc-900 dark:text-zinc-100 border-b border-zinc-200/60 dark:border-zinc-800/60 pb-2">
-            <HeartPulse size={15} className="text-rose-500" />
-            <span>Emergency & Banking</span>
-          </div>
-          <div className="grid grid-cols-2 gap-3 text-xs">
-            <div>
-              <div className="text-[10px] uppercase font-bold text-zinc-400">Emergency Contact</div>
-              <div className="font-semibold text-zinc-800 dark:text-zinc-200 mt-0.5">
-                {emp.emergency_contact_name || '—'} ({emp.emergency_contact_relationship || 'Contact'})
-              </div>
-            </div>
-            <div>
-              <div className="text-[10px] uppercase font-bold text-zinc-400">Emergency Phone</div>
-              <div className="font-semibold text-zinc-800 dark:text-zinc-200 mt-0.5 font-mono">{emp.emergency_contact_phone || '—'}</div>
-            </div>
-            <div>
-              <div className="text-[10px] uppercase font-bold text-zinc-400">Bank Name</div>
-              <div className="font-semibold text-zinc-800 dark:text-zinc-200 mt-0.5">{emp.bank_name || '—'}</div>
-            </div>
-            <div>
-              <div className="text-[10px] uppercase font-bold text-zinc-400">Account Number</div>
-              <div className="font-mono font-semibold text-zinc-800 dark:text-zinc-200 mt-0.5">{emp.account_number ? `•••• •••• ${String(emp.account_number).slice(-4)}` : '—'}</div>
             </div>
           </div>
         </div>
@@ -245,17 +270,17 @@ export default function EmployeeProfileView({ user }) {
                   type="password"
                   value={passData.current}
                   onChange={(e) => setPassData({ ...passData, current: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-orange-500"
+                  className="form-input"
                   required
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-bold uppercase text-zinc-400 mb-1">New Password (min 8 chars)</label>
+                <label className="block text-[10px] font-bold uppercase text-zinc-400 mb-1">New Password</label>
                 <input
                   type="password"
                   value={passData.next}
                   onChange={(e) => setPassData({ ...passData, next: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-orange-500"
+                  className="form-input"
                   required
                 />
               </div>
@@ -265,24 +290,25 @@ export default function EmployeeProfileView({ user }) {
                   type="password"
                   value={passData.confirm}
                   onChange={(e) => setPassData({ ...passData, confirm: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-orange-500"
+                  className="form-input"
                   required
                 />
               </div>
-              <div className="pt-2 flex justify-end gap-2">
+
+              <div className="pt-2 flex gap-2 justify-end">
                 <button
                   type="button"
                   onClick={() => setPasswordModalOpen(false)}
-                  className="px-3 py-2 rounded-lg text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                  className="btn-secondary py-2 px-3 text-xs"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={passLoading}
-                  className="btn-primary text-xs py-2 px-4 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-bold"
+                  className="btn-primary py-2 px-4 text-xs font-bold"
                 >
-                  {passLoading ? 'Updating...' : 'Save New Password'}
+                  {passLoading ? 'Updating…' : 'Update Password'}
                 </button>
               </div>
             </form>

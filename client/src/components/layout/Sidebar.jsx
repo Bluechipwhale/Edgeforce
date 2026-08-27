@@ -5,27 +5,24 @@ import {
   Users,
   Package,
   WalletCards,
-  Search,
-  Sparkles,
   MapPin,
   Clock,
   ClipboardCheck,
   ShieldAlert,
   Calendar,
   FileText,
-  Target,
-  Activity,
-  Network,
-  Award,
   ChevronRight,
   Truck,
   AlertTriangle,
   Building2,
   Settings,
-  Boxes
+  Boxes,
+  Bell,
+  User,
+  LogOut
 } from 'lucide-react';
 
-export default function Sidebar({ user, currentTab, onSelectTab, isMobile, onCloseMobile }) {
+export default function Sidebar({ user, currentTab, onSelectTab, onLogout, isMobile, onCloseMobile }) {
   const role = user?.role_code;
   const rank = user?.rank?.code;
 
@@ -50,7 +47,7 @@ export default function Sidebar({ user, currentTab, onSelectTab, isMobile, onClo
     ];
 
     if (isHROrIT) {
-      complianceItems.push({ id: 'org', label: 'Organization Chart', icon: Network });
+      complianceItems.push({ id: 'org', label: 'Organization Chart', icon: Building2 });
     }
 
     complianceItems.push({ id: 'it_admin', label: 'Company Settings', icon: Settings });
@@ -62,7 +59,7 @@ export default function Sidebar({ user, currentTab, onSelectTab, isMobile, onClo
           { id: 'command_center', label: 'Executive Command Center', icon: LayoutDashboard },
           { id: 'supervisor_dashboard', label: 'Workforce 360 & Live Radar', icon: MapPin },
           { id: 'customers', label: 'Customer 360 Directory', icon: Building2 },
-          { id: 'manifest', label: 'Field Routes & Geofencing', icon: CompassIcon }
+          { id: 'manifest', label: 'Field Routes & Geofencing', icon: MapPin }
         ]
       },
       {
@@ -79,29 +76,41 @@ export default function Sidebar({ user, currentTab, onSelectTab, isMobile, onClo
         items: complianceItems
       }
     ];
-  } else if (role === 'SALES_AGENT') {
+  } else if (role === 'SALES_AGENT' || role === 'BRAND_AMBASSADOR' || role === 'PROMOTER') {
+    // Strict Least-Privilege Sales Agent Menu: 11 approved items only
     navSections = [
       {
-        title: 'Commercial Field Sales',
+        title: 'Sales Operations',
         items: [
-          { id: 'sales', label: 'Sales Orders & POS Cockpit', icon: ShoppingCart },
-          { id: 'customers', label: 'Customer Outlets & 360', icon: Building2 },
-          { id: 'manifest', label: 'Assigned Beat Route', icon: MapPin },
-          { id: 'collections', label: 'Collections & Payments', icon: WalletCards },
-          { id: 'reports', label: 'My Sales Performance', icon: FileText }
+          { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+          { id: 'attendance', label: 'Attendance', icon: Clock },
+          { id: 'tasks', label: 'Tasks', icon: ClipboardCheck },
+          { id: 'manifest', label: 'Visits / Routes', icon: MapPin },
+          { id: 'customers', label: 'Customers / Stores', icon: Building2 },
+          { id: 'sales', label: 'Sales', icon: ShoppingCart },
+          { id: 'notifications', label: 'Notifications', icon: Bell },
+          { id: 'safety', label: 'SOS / Emergency', icon: ShieldAlert },
+          { id: 'profile', label: 'My Profile', icon: User },
+          { id: 'logout', label: 'Logout', icon: LogOut, action: 'logout' }
         ]
       }
     ];
   } else if (role === 'FIELD_AGENT') {
+    // Strict Least-Privilege Field Agent Menu: 11 approved items only
     navSections = [
       {
-        title: 'Field Operations & Audits',
+        title: 'Field Operations',
         items: [
-          { id: 'manifest', label: 'Route Manifest & GPS', icon: MapPin },
-          { id: 'customers', label: 'Assigned Stores & Audits', icon: Building2 },
-          { id: 'delivery', label: 'Deliveries & POD Capture', icon: Truck },
-          { id: 'safety', label: 'Emergency SOS', icon: ShieldAlert },
-          { id: 'reports', label: 'My Attendance & Visits', icon: FileText }
+          { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+          { id: 'attendance', label: 'Attendance', icon: Clock },
+          { id: 'tasks', label: 'Tasks', icon: ClipboardCheck },
+          { id: 'manifest', label: 'Visits / Routes', icon: MapPin },
+          { id: 'customers', label: 'Customers / Stores', icon: Building2 },
+          { id: 'audits', label: 'Field Audit', icon: ClipboardCheck },
+          { id: 'notifications', label: 'Notifications', icon: Bell },
+          { id: 'safety', label: 'SOS / Emergency', icon: ShieldAlert },
+          { id: 'profile', label: 'My Profile', icon: User },
+          { id: 'logout', label: 'Logout', icon: LogOut, action: 'logout' }
         ]
       }
     ];
@@ -116,14 +125,12 @@ export default function Sidebar({ user, currentTab, onSelectTab, isMobile, onClo
           { id: 'attendance', label: 'My Timesheet & GPS', icon: Clock },
           { id: 'leave', label: 'Leave Requests', icon: Calendar },
           { id: 'tasks', label: 'Assigned Tasks', icon: ClipboardCheck },
-          { id: 'payslip', label: 'Compensation & Payslips', icon: FileText }
+          { id: 'payslip', label: 'Compensation & Payslips', icon: FileText },
+          { id: 'profile', label: 'My Profile', icon: User },
+          { id: 'logout', label: 'Logout', icon: LogOut, action: 'logout' }
         ]
       }
     ];
-  }
-
-  function CompassIcon(props) {
-    return <MapPin {...props} />;
   }
 
   return (
@@ -143,17 +150,29 @@ export default function Sidebar({ user, currentTab, onSelectTab, isMobile, onClo
                 <button
                   key={item.id}
                   onClick={() => {
-                    onSelectTab(item.id);
+                    if (item.action === 'logout') {
+                      onLogout?.();
+                    } else {
+                      onSelectTab(item.id);
+                    }
                     if (isMobile && onCloseMobile) onCloseMobile();
                   }}
                   className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition group ${
-                    isActive
+                    item.id === 'safety' && role?.includes('AGENT')
+                      ? 'text-rose-600 dark:text-rose-400 hover:bg-rose-500/10'
+                      : isActive
                       ? 'bg-orange-500 text-white shadow-xs font-bold'
                       : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 hover:text-zinc-900 dark:hover:text-zinc-100'
                   }`}
                 >
                   <div className="flex items-center gap-2.5">
-                    <Icon size={16} className={`transition ${isActive ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-300'}`} />
+                    <Icon size={16} className={`transition ${
+                      isActive
+                        ? 'text-white'
+                        : item.id === 'safety'
+                        ? 'text-rose-500'
+                        : 'text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-300'
+                    }`} />
                     <span>{item.label}</span>
                   </div>
                   {isActive && <ChevronRight size={13} className="text-white/80" />}
@@ -164,10 +183,13 @@ export default function Sidebar({ user, currentTab, onSelectTab, isMobile, onClo
         ))}
       </div>
 
-      <div className="p-3 border-t border-zinc-200 dark:border-zinc-800 text-[11px] text-zinc-400">
+      <div className="p-3 border-t border-zinc-200 dark:border-zinc-800 text-[11px] text-zinc-400 space-y-1.5">
         <div className="flex items-center justify-between">
-          <span className="font-semibold text-zinc-600 dark:text-zinc-300 truncate max-w-[150px]">{user?.full_name || 'Active User'}</span>
-          <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-500">{role || 'STAFF'}</span>
+          <span className="font-semibold text-zinc-600 dark:text-zinc-300 truncate max-w-[140px]">{user?.full_name || 'Active User'}</span>
+          <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-500">{role || 'STAFF'}</span>
+        </div>
+        <div className="text-[10px] text-zinc-400 dark:text-zinc-500 font-medium">
+          &copy; Nexfeild. edgewforce.com
         </div>
       </div>
     </aside>

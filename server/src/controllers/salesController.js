@@ -4,6 +4,7 @@
 
 import { salesService } from '../services/salesService.js';
 import { inventoryService } from '../services/inventoryService.js';
+import { isManagementUser } from '../middleware/rbac.js';
 
 export const salesController = {
   async getMyReport(req, res) {
@@ -76,7 +77,13 @@ export const salesController = {
 
   async getOrders(req, res) {
     try {
-      const orders = await salesService.getOrders(req.query);
+      const isMgmt = isManagementUser(req.user);
+      const query = { ...req.query };
+      if (!isMgmt) {
+        const empId = req.user.employee?.id || req.user.id;
+        query.agent_id = empId;
+      }
+      const orders = await salesService.getOrders(query);
       res.json({ success: true, data: orders, orders });
     } catch (err) {
       res.status(500).json({ success: false, error: { message: err.message } });
@@ -95,7 +102,13 @@ export const salesController = {
 
   async getPayments(req, res) {
     try {
-      const payments = await salesService.getPayments(req.query);
+      const isMgmt = isManagementUser(req.user);
+      const query = { ...req.query };
+      if (!isMgmt) {
+        const empId = req.user.employee?.id || req.user.id;
+        query.recorded_by = empId;
+      }
+      const payments = await salesService.getPayments(query);
       res.json({ success: true, data: payments, payments });
     } catch (err) {
       res.status(500).json({ success: false, error: { message: err.message } });
@@ -143,8 +156,8 @@ export const salesController = {
 
   async rejectOrder(req, res) {
     try {
-      const { reason } = req.body;
-      const updated = await salesService.rejectOrder(req.params.id, req.user, reason);
+      const { rejection_reason } = req.body;
+      const updated = await salesService.rejectOrder(req.params.id, req.user, rejection_reason);
       res.json({ success: true, data: updated, message: `Order #${req.params.id} rejected.` });
     } catch (err) {
       res.status(400).json({ success: false, error: { message: err.message } });
@@ -153,9 +166,9 @@ export const salesController = {
 
   async requestOrderChanges(req, res) {
     try {
-      const { comments } = req.body;
-      const updated = await salesService.requestOrderChanges(req.params.id, req.user, comments);
-      res.json({ success: true, data: updated, message: `Modifications requested for order #${req.params.id}.` });
+      const { notes } = req.body;
+      const updated = await salesService.requestOrderChanges(req.params.id, req.user, notes);
+      res.json({ success: true, data: updated, message: `Order #${req.params.id} returned for changes.` });
     } catch (err) {
       res.status(400).json({ success: false, error: { message: err.message } });
     }
@@ -173,7 +186,9 @@ export const salesController = {
 
   async getSettlements(req, res) {
     try {
-      const settlements = await salesService.getSettlements(req.query.agent_id);
+      const isMgmt = isManagementUser(req.user);
+      const agentId = !isMgmt ? (req.user.employee?.id || req.user.id) : req.query.agent_id;
+      const settlements = await salesService.getSettlements(agentId);
       res.json({ success: true, data: settlements, settlements });
     } catch (err) {
       res.status(500).json({ success: false, error: { message: err.message } });
@@ -189,5 +204,3 @@ export const salesController = {
     }
   }
 };
-
-

@@ -48,22 +48,21 @@ router.post('/visits/complete', upload.fields([
 router.post('/activities/field', upload.single('photo'), fieldController.logFieldActivity);
 router.post('/activities/sales', upload.single('photo'), fieldController.logSalesActivity);
 
-// 5. Emergency SOS
+// 5. Emergency SOS (Agents have read-only access to their own SOS records; resolution requires management role)
 router.post('/sos-beacon', fieldController.triggerSOS);
 router.get('/sos', fieldController.getSOS);
 
-// 6. Supervisor Live Monitoring & Visibility
-router.get('/supervisor/metrics', fieldController.getSupervisorDashboardMetrics);
-router.get('/supervisor/team', fieldController.getSupervisorTeamTable);
-router.get('/supervisor/employee/:employeeId', fieldController.getSupervisorEmployeeProfile);
-router.get('/supervisor/employee/:employeeId/timeline', fieldController.getEmployeeTimeline);
-router.get('/supervisor/alerts', fieldController.getSupervisorAlerts);
-router.post('/supervisor/alerts/:alertId/resolve', fieldController.resolveSupervisorAlert);
-router.post('/supervisor/override-attendance', hasRole('SUPERVISOR', 'MANAGER', 'HR', 'IT_ADMIN', 'CEO'), fieldController.overrideAttendance);
-router.post('/supervisor/daily-summary', fieldController.generateDailyTeamSummary);
+// 6. Supervisor Live Monitoring & Visibility (Strict RBAC protection against Unauthorized Agents)
+router.get('/supervisor/metrics', hasRole('SUPERVISOR', 'MANAGER', 'HR', 'HR_MANAGER', 'IT_ADMIN', 'CEO', 'CTO', 'SUPER_ADMIN', 'ADMIN'), fieldController.getSupervisorDashboardMetrics);
+router.get('/supervisor/team', hasRole('SUPERVISOR', 'MANAGER', 'HR', 'HR_MANAGER', 'IT_ADMIN', 'CEO', 'CTO', 'SUPER_ADMIN', 'ADMIN'), fieldController.getSupervisorTeamTable);
+router.get('/supervisor/employee/:employeeId', hasRole('SUPERVISOR', 'MANAGER', 'HR', 'HR_MANAGER', 'IT_ADMIN', 'CEO', 'CTO', 'SUPER_ADMIN', 'ADMIN'), fieldController.getSupervisorEmployeeProfile);
+router.get('/supervisor/employee/:employeeId/timeline', hasRole('SUPERVISOR', 'MANAGER', 'HR', 'HR_MANAGER', 'IT_ADMIN', 'CEO', 'CTO', 'SUPER_ADMIN', 'ADMIN'), fieldController.getEmployeeTimeline);
+router.get('/supervisor/alerts', hasRole('SUPERVISOR', 'MANAGER', 'HR', 'HR_MANAGER', 'IT_ADMIN', 'CEO', 'CTO', 'SUPER_ADMIN', 'ADMIN'), fieldController.getSupervisorAlerts);
+router.post('/supervisor/alerts/:alertId/resolve', hasRole('SUPERVISOR', 'MANAGER', 'HR', 'HR_MANAGER', 'IT_ADMIN', 'CEO', 'CTO', 'SUPER_ADMIN', 'ADMIN'), fieldController.resolveSupervisorAlert);
+router.post('/supervisor/override-attendance', hasRole('SUPERVISOR', 'MANAGER', 'HR', 'HR_MANAGER', 'IT_ADMIN', 'CEO', 'CTO', 'SUPER_ADMIN', 'ADMIN'), fieldController.overrideAttendance);
+router.post('/supervisor/daily-summary', hasRole('SUPERVISOR', 'MANAGER', 'HR', 'HR_MANAGER', 'IT_ADMIN', 'CEO', 'CTO', 'SUPER_ADMIN', 'ADMIN'), fieldController.generateDailyTeamSummary);
 
 // 7. Reporting Engine
 router.get('/reports', fieldController.getReports);
 
 export default router;
-

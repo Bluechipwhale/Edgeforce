@@ -1,6 +1,8 @@
 // ==============================================================================
-// EDGEWFORCE - ROLE & GRANULAR PERMISSION (RBAC) MIDDLEWARE
+// EDGEWFORCE - ROLE & GRANULAR PERMISSION (RBAC) & IDOR MIDDLEWARE
 // ==============================================================================
+
+import { db } from '../config/database.js';
 
 // Base role mapping to default permissions
 export const ROLE_PERMISSIONS = {
@@ -28,6 +30,34 @@ export const ROLE_PERMISSIONS = {
   staff: ['view_dashboard', 'view_inventory'],
   EMPLOYEE: ['view_dashboard', 'view_inventory']
 };
+
+/**
+ * Returns true if user has elevated management or admin capabilities
+ */
+export function isManagementUser(user) {
+  if (!user) return false;
+  const role = user.role_code;
+  const rank = user.rank?.code;
+  const email = user.email;
+
+  return (
+    role === 'SUPER_ADMIN' ||
+    role === 'ADMIN' ||
+    role === 'IT_ADMIN' ||
+    rank === 'IT_ADMIN' ||
+    role === 'CEO' ||
+    rank === 'CEO' ||
+    role === 'CTO' ||
+    rank === 'CTO' ||
+    role === 'HR_MANAGER' ||
+    role === 'HR' ||
+    rank === 'HR' ||
+    role === 'MANAGER' ||
+    role === 'SUPERVISOR' ||
+    email === 'admin@edgewforce.com' ||
+    email === 'it@edgewforce.com'
+  );
+}
 
 /**
  * Validates whether manager rank level is higher than subordinate rank level.
@@ -109,5 +139,78 @@ export function hasPermission(permissionCode) {
       success: false,
       error: { code: 'PERMISSION_DENIED', message: `Missing required permission: ${permissionCode}` }
     });
+  };
+}
+
+/**
+ * IDOR / Object-Level Authorization Middleware:
+ * Verifies that the authenticated Agent owns the requested resource, or is a supervisor/management user.
+ * @param {string} tableName - Database table name (e.g. 'tasks', 'sales_orders', 'sos', 'attendance')
+ * @param {string} paramKey - Request parameter name containing the ID (e.g. 'id', 'taskId', 'orderId')
+ * @param {string[]} ownerFields - Candidate owner fields on the table (e.g. ['employee_id', 'agent_id', 'user_id'])
+ */
+export function verifyResourceOwnership(tableName, paramKey = 'id', ownerFields = ['employee_id', 'agent_id', 'user_id']) {
+  return async (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        error: { code: 'UNAUTHORIZED', message: 'Authentication required.' }
+      });
+    }
+
+    // Management/Supervisors bypass direct single-owner checks
+    if (isManagementUser(req.user)) {
+      return next();
+    }
+
+    const resourceId = req.params[paramKey] || req.body?.[paramKey];
+    if (!resourceId) {
+      return next();
+    }
+
+    try {
+      const resource = await db.findById(tableName, resourceId);
+      if (!resource) {
+        return res.status(404).json({
+          success: false,
+          error: { code: 'NOT_FOUND', message: `${tableName} resource not found.` }
+        });
+      }
+
+      const userEmpId = req.user.employee_id || req.user.employee?.id;
+      const userId = req.user.id;
+
+      // Check if any owner field matches
+      let isOwner = false;
+      for (const field of ownerFields) {
+        if (resource[field] !== undefined && resource[field] !== null) {
+          if (
+            String(resource[field]) === String(userEmpId) ||
+            String(resource[field]) === String(userId)
+          ) {
+            isOwner = true;
+            break;
+          }
+        }
+      }
+
+      if (!isOwner) {
+        return res.status(403).json({
+          success: false,
+          error: {
+            code: 'FORBIDDEN',
+            message: `Access denied. You do not have authorization to access or modify this ${tableName} record.`
+          }
+        });
+      }
+
+      req.targetResource = resource;
+      return next();
+    } catch (err) {
+      return res.status(500).json({
+        success: false,
+        error: { code: 'INTERNAL_ERROR', message: err.message }
+      });
+    }
   };
 }

@@ -3,6 +3,7 @@
 // ==============================================================================
 
 import { fieldService } from '../services/fieldService.js';
+import { isManagementUser } from '../middleware/rbac.js';
 
 export const fieldController = {
   async getRouteManifest(req, res) {
@@ -120,7 +121,18 @@ export const fieldController = {
 
   async getLocationHistory(req, res) {
     try {
-      const employeeId = req.params.employeeId || req.user.employee?.id || req.user.id;
+      const isMgmt = isManagementUser(req.user);
+      const requestedEmpId = req.params.employeeId;
+      const callerEmpId = req.user.employee?.id || req.user.id;
+
+      if (requestedEmpId && !isMgmt && String(requestedEmpId) !== String(callerEmpId)) {
+        return res.status(403).json({
+          success: false,
+          error: { code: 'FORBIDDEN', message: 'Access denied. You can only view your own location telemetry history.' }
+        });
+      }
+
+      const employeeId = requestedEmpId || callerEmpId;
       const date = req.query.date;
       const history = await fieldService.getLocationHistory(employeeId, date);
       res.json({ success: true, data: history });
@@ -256,7 +268,13 @@ export const fieldController = {
 
   async getSOS(req, res) {
     try {
+      const isMgmt = isManagementUser(req.user);
       const list = await fieldService.getSOS(req.query.status);
+      if (!isMgmt) {
+        const callerEmpId = req.user.employee?.id || req.user.id;
+        const filtered = list.filter(item => String(item.agent_id || item.employee_id) === String(callerEmpId));
+        return res.json({ success: true, data: filtered, list: filtered });
+      }
       res.json({ success: true, data: list, list });
     } catch (err) {
       res.status(500).json({ success: false, error: { message: err.message } });

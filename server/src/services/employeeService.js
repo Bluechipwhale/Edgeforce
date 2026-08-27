@@ -287,8 +287,11 @@ export const employeeService = {
 
   async updateOKR(okrId, employeeId, data) {
     const okr = await db.findById('okrs', okrId);
-    if (!okr || Number(okr.employee_id) !== Number(employeeId)) {
-      throw new Error('OKR not found or unauthorized.');
+    if (!okr) throw new Error('OKR not found.');
+    if (Number(okr.employee_id) !== Number(employeeId)) {
+      const err = new Error('Access denied. You can only update your own OKRs.');
+      err.statusCode = 403;
+      throw err;
     }
 
     const progress = Math.min(100, Math.max(0, Number(data.progress || 0)));
@@ -306,8 +309,14 @@ export const employeeService = {
 
   async updateTaskStatus(taskId, employeeId, data) {
     const task = await db.findById('tasks', taskId);
-    if (!task || Number(task.assigned_to) !== Number(employeeId)) {
+    if (!task) {
       throw new Error('Task not found.');
+    }
+    const isOwner = Number(task.assigned_to) === Number(employeeId) || Number(task.employee_id) === Number(employeeId);
+    if (!isOwner) {
+      const err = new Error('Access denied. You can only update your own assigned tasks.');
+      err.statusCode = 403;
+      throw err;
     }
 
     const status = data.status || task.status;

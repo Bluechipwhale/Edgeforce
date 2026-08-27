@@ -120,7 +120,8 @@ export const employeeController = {
       const okr = await employeeService.updateOKR(req.params.id, empId, req.body);
       res.json({ success: true, data: okr, ...okr });
     } catch (err) {
-      res.status(400).json({ success: false, error: { message: err.message } });
+      const status = err.statusCode || (err.message.includes('Access denied') ? 403 : 400);
+      res.status(status).json({ success: false, error: { code: status === 403 ? 'FORBIDDEN' : 'BAD_REQUEST', message: err.message } });
     }
   },
 
@@ -140,7 +141,8 @@ export const employeeController = {
       const task = await employeeService.updateTaskStatus(req.params.id, empId, req.body);
       res.json({ success: true, data: task, ...task });
     } catch (err) {
-      res.status(400).json({ success: false, error: { message: err.message } });
+      const status = err.statusCode || (err.message.includes('Access denied') ? 403 : 400);
+      res.status(status).json({ success: false, error: { code: status === 403 ? 'FORBIDDEN' : 'BAD_REQUEST', message: err.message } });
     }
   },
 

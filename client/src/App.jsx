@@ -19,6 +19,8 @@ import ExecutiveDashboard from './dashboards/ExecutiveDashboard';
 import ITAdminDashboard from './dashboards/ITAdminDashboard';
 import HRDashboard from './dashboards/HRDashboard';
 import EmployeeDashboard from './dashboards/EmployeeDashboard';
+import EmployeeProfileView from './components/employee/EmployeeProfileView';
+import AgentSOSView from './components/field/AgentSOSView';
 
 import { api } from './lib/api';
 
@@ -61,8 +63,8 @@ export default function App() {
       return 'command_center';
     }
     if (role === 'SUPERVISOR') return 'supervisor_dashboard';
-    if (role === 'FIELD_AGENT') return 'manifest';
-    if (role === 'SALES_AGENT' || role === 'BRAND_AMBASSADOR' || role === 'PROMOTER') return 'sales';
+    if (role === 'FIELD_AGENT') return 'dashboard';
+    if (role === 'SALES_AGENT' || role === 'BRAND_AMBASSADOR' || role === 'PROMOTER') return 'dashboard';
     if (['CEO', 'CTO'].includes(role) || ['CEO', 'CTO'].includes(rank)) return 'command_center';
     if (['ACCOUNTANT', 'SENIOR_ACCOUNTANT'].includes(role)) return 'financials';
     if (role === 'HR' || role === 'HR_MANAGER' || rank === 'HR') return 'people';
@@ -117,20 +119,47 @@ export default function App() {
     return <LoginPage onLogin={handleLoginSuccess} />;
   }
 
-  // Render Role & Feature Dashboards with RBAC Routing Guards
+  // Render Role & Feature Dashboards with Strict Least-Privilege Routing Guards
   const renderDashboard = () => {
     const role = user?.role_code;
     const isFieldAgent = role === 'FIELD_AGENT';
     const isSalesAgent = role === 'SALES_AGENT' || role === 'BRAND_AMBASSADOR' || role === 'PROMOTER';
+    const isAgent = isFieldAgent || isSalesAgent;
 
-    // Guard Field Agents from accessing admin, hr, inventory, or executive tabs
-    if (isFieldAgent && ['inventory', 'it_admin', 'executive', 'financials', 'payroll', 'overview', 'people', 'idle', 'org'].includes(currentTab)) {
+    // Strict confinement: Guard Agents from accessing admin, hr, settings, executive, or inventory workspaces
+    if (isAgent && ['inventory', 'it_admin', 'executive', 'financials', 'payroll', 'overview', 'people', 'idle', 'org', 'command_center', 'supervisor_dashboard'].includes(currentTab)) {
+      if (isFieldAgent) return <FieldDashboard user={user} />;
+      return <SalesDashboard user={user} />;
+    }
+
+    // Guard Field Agents from accessing sales cockpit
+    if (isFieldAgent && ['sales', 'orders', 'catalog', 'intel', 'settlement'].includes(currentTab)) {
       return <FieldDashboard user={user} />;
     }
 
-    // Guard Sales Agents from accessing admin, inventory, or hr tabs
-    if (isSalesAgent && ['inventory', 'it_admin', 'executive', 'payroll', 'overview', 'people', 'idle', 'org'].includes(currentTab)) {
-      return <SalesDashboard user={user} />;
+    // Profile Tab
+    if (currentTab === 'profile') {
+      return <EmployeeProfileView user={user} />;
+    }
+
+    // Safety / Emergency SOS Tab
+    if (currentTab === 'safety' || currentTab === 'sos') {
+      if (isAgent) {
+        return <AgentSOSView user={user} />;
+      }
+      return <HRDashboard user={user} initialTab="safety" />;
+    }
+
+    // Attendance Tab for Field & Sales Agents
+    if (currentTab === 'attendance') {
+      if (isFieldAgent) return <FieldDashboard user={user} initialTab="shift" />;
+      if (isSalesAgent) return <SalesDashboard user={user} initialTab="attendance" />;
+      return <EmployeeDashboard user={user} initialTab="attendance" />;
+    }
+
+    // Tasks Tab
+    if (currentTab === 'tasks') {
+      return <EmployeeDashboard user={user} initialTab="tasks" />;
     }
 
     switch (currentTab) {
@@ -157,7 +186,6 @@ export default function App() {
       case 'manifest':
       case 'shift':
       case 'audits':
-      case 'sos':
         return <FieldDashboard user={user} />;
       case 'financials':
       case 'collections':
@@ -169,14 +197,13 @@ export default function App() {
         return <ITAdminDashboard user={user} onSelectTab={setCurrentTab} />;
       case 'overview':
       case 'people':
-      case 'attendance':
-      case 'idle':
       case 'leave':
-      case 'tasks':
-      case 'safety':
+      case 'idle':
       case 'org':
         return <HRDashboard user={user} initialTab={currentTab} />;
       default:
+        if (isFieldAgent) return <FieldDashboard user={user} />;
+        if (isSalesAgent) return <SalesDashboard user={user} />;
         return <EmployeeDashboard user={user} />;
     }
   };
