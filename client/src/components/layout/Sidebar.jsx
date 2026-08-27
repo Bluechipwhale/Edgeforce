@@ -36,6 +36,8 @@ export default function Sidebar({ user, currentTab, onSelectTab, onLogout, isMob
     user?.email === 'it@edgewforce.com' ||
     user?.email === 'hr@edgewforce.com';
 
+  const isAgent = role === 'FIELD_AGENT' || role === 'SALES_AGENT' || role === 'BRAND_AMBASSADOR' || role === 'PROMOTER';
+
   let navSections = [];
 
   if (isManagement) {
@@ -76,41 +78,20 @@ export default function Sidebar({ user, currentTab, onSelectTab, onLogout, isMob
         items: complianceItems
       }
     ];
-  } else if (role === 'SALES_AGENT' || role === 'BRAND_AMBASSADOR' || role === 'PROMOTER') {
-    // Strict Least-Privilege Sales Agent Menu: 11 approved items only
+  } else if (isAgent) {
+    // STRICT AGENT MENU: EXACTLY THESE 8 ITEMS ONLY
     navSections = [
       {
-        title: 'Sales Operations',
+        title: 'Agent Operations',
         items: [
-          { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-          { id: 'attendance', label: 'Attendance', icon: Clock },
-          { id: 'tasks', label: 'Tasks', icon: ClipboardCheck },
-          { id: 'manifest', label: 'Visits / Routes', icon: MapPin },
-          { id: 'customers', label: 'Customers / Stores', icon: Building2 },
-          { id: 'sales', label: 'Sales', icon: ShoppingCart },
-          { id: 'notifications', label: 'Notifications', icon: Bell },
-          { id: 'safety', label: 'SOS / Emergency', icon: ShieldAlert },
-          { id: 'profile', label: 'My Profile', icon: User },
-          { id: 'logout', label: 'Logout', icon: LogOut, action: 'logout' }
-        ]
-      }
-    ];
-  } else if (role === 'FIELD_AGENT') {
-    // Strict Least-Privilege Field Agent Menu: 11 approved items only
-    navSections = [
-      {
-        title: 'Field Operations',
-        items: [
-          { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-          { id: 'attendance', label: 'Attendance', icon: Clock },
-          { id: 'tasks', label: 'Tasks', icon: ClipboardCheck },
-          { id: 'manifest', label: 'Visits / Routes', icon: MapPin },
-          { id: 'customers', label: 'Customers / Stores', icon: Building2 },
-          { id: 'audits', label: 'Field Audit', icon: ClipboardCheck },
-          { id: 'notifications', label: 'Notifications', icon: Bell },
-          { id: 'safety', label: 'SOS / Emergency', icon: ShieldAlert },
-          { id: 'profile', label: 'My Profile', icon: User },
-          { id: 'logout', label: 'Logout', icon: LogOut, action: 'logout' }
+          { id: 'manifest', label: 'Field Routes & Geofencing', icon: MapPin },
+          { id: 'customer_360', label: 'Customer 360', icon: Building2 },
+          { id: 'customers', label: 'Directory', icon: Users },
+          { id: 'delivery', label: 'Fleet', icon: Truck },
+          { id: 'payments', label: 'Proof of Payment', icon: WalletCards },
+          { id: 'alerts', label: 'Alert & Red Flag Center', icon: AlertTriangle },
+          { id: 'safety', label: 'Emergency SOS', icon: ShieldAlert },
+          { id: 'tasks', label: 'Queue', icon: ClipboardCheck }
         ]
       }
     ];
@@ -145,7 +126,14 @@ export default function Sidebar({ user, currentTab, onSelectTab, onLogout, isMob
             </div>
             {sec.items.map((item) => {
               const Icon = item.icon;
-              const isActive = currentTab === item.id;
+              const isActive = currentTab === item.id || 
+                (item.id === 'customer_360' && currentTab === 'customer_360') ||
+                (item.id === 'customers' && currentTab === 'directory') ||
+                (item.id === 'delivery' && currentTab === 'fleet') ||
+                (item.id === 'payments' && (currentTab === 'settlement' || currentTab === 'collections')) ||
+                (item.id === 'safety' && currentTab === 'sos') ||
+                (item.id === 'tasks' && currentTab === 'queue');
+
               return (
                 <button
                   key={item.id}
@@ -158,8 +146,10 @@ export default function Sidebar({ user, currentTab, onSelectTab, onLogout, isMob
                     if (isMobile && onCloseMobile) onCloseMobile();
                   }}
                   className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition group ${
-                    item.id === 'safety' && role?.includes('AGENT')
-                      ? 'text-rose-600 dark:text-rose-400 hover:bg-rose-500/10'
+                    item.id === 'safety' && isAgent
+                      ? isActive
+                        ? 'bg-rose-600 text-white shadow-xs font-bold'
+                        : 'text-rose-600 dark:text-rose-400 hover:bg-rose-500/10'
                       : isActive
                       ? 'bg-orange-500 text-white shadow-xs font-bold'
                       : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 hover:text-zinc-900 dark:hover:text-zinc-100'

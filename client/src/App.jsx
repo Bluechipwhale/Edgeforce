@@ -63,8 +63,9 @@ export default function App() {
       return 'command_center';
     }
     if (role === 'SUPERVISOR') return 'supervisor_dashboard';
-    if (role === 'FIELD_AGENT') return 'dashboard';
-    if (role === 'SALES_AGENT' || role === 'BRAND_AMBASSADOR' || role === 'PROMOTER') return 'dashboard';
+    if (['FIELD_AGENT', 'SALES_AGENT', 'BRAND_AMBASSADOR', 'PROMOTER'].includes(role)) {
+      return 'manifest'; // Defaults directly to Field Routes & Geofencing
+    }
     if (['CEO', 'CTO'].includes(role) || ['CEO', 'CTO'].includes(rank)) return 'command_center';
     if (['ACCOUNTANT', 'SENIOR_ACCOUNTANT'].includes(role)) return 'financials';
     if (role === 'HR' || role === 'HR_MANAGER' || rank === 'HR') return 'people';
@@ -122,54 +123,70 @@ export default function App() {
   // Render Role & Feature Dashboards with Strict Least-Privilege Routing Guards
   const renderDashboard = () => {
     const role = user?.role_code;
-    const isFieldAgent = role === 'FIELD_AGENT';
-    const isSalesAgent = role === 'SALES_AGENT' || role === 'BRAND_AMBASSADOR' || role === 'PROMOTER';
-    const isAgent = isFieldAgent || isSalesAgent;
+    const isAgent = ['FIELD_AGENT', 'SALES_AGENT', 'BRAND_AMBASSADOR', 'PROMOTER'].includes(role);
 
-    // Strict confinement: Guard Agents from accessing admin, hr, settings, executive, or inventory workspaces
-    if (isAgent && ['inventory', 'it_admin', 'executive', 'financials', 'payroll', 'overview', 'people', 'idle', 'org', 'command_center', 'supervisor_dashboard'].includes(currentTab)) {
-      if (isFieldAgent) return <FieldDashboard user={user} />;
-      return <SalesDashboard user={user} />;
-    }
+    // Strict Agent Confinement: Only the 8 authorized Agent views are accessible
+    if (isAgent) {
+      const allowedAgentTabs = [
+        'manifest',       // 1. Field Routes & Geofencing
+        'customer_360',   // 2. Customer 360
+        'customers',      // 3. Directory
+        'directory',
+        'delivery',       // 4. Fleet
+        'fleet',
+        'payments',       // 5. Proof of Payment
+        'settlement',
+        'collections',
+        'alerts',         // 6. Alert & Red Flag Center
+        'safety',         // 7. Emergency SOS
+        'sos',
+        'tasks',          // 8. Queue
+        'queue'
+      ];
 
-    // Guard Field Agents from accessing sales cockpit
-    if (isFieldAgent && ['sales', 'orders', 'catalog', 'intel', 'settlement'].includes(currentTab)) {
-      return <FieldDashboard user={user} />;
-    }
-
-    // Profile Tab
-    if (currentTab === 'profile') {
-      return <EmployeeProfileView user={user} />;
-    }
-
-    // Safety / Emergency SOS Tab
-    if (currentTab === 'safety' || currentTab === 'sos') {
-      if (isAgent) {
-        return <AgentSOSView user={user} />;
+      // If Agent enters an unauthorized URL / tab, strictly fallback to Field Routes & Geofencing
+      if (!allowedAgentTabs.includes(currentTab)) {
+        return <FieldDashboard user={user} />;
       }
-      return <HRDashboard user={user} initialTab="safety" />;
+
+      switch (currentTab) {
+        case 'manifest':
+          return <FieldDashboard user={user} />;
+        case 'customer_360':
+        case 'customers':
+        case 'directory':
+          return <CustomerDirectoryDashboard user={user} />;
+        case 'delivery':
+        case 'fleet':
+          return <DeliveryDashboard user={user} />;
+        case 'payments':
+        case 'settlement':
+        case 'collections':
+          return <SalesDashboard user={user} initialTab="settlement" />;
+        case 'alerts':
+          return <AlertCenterDashboard user={user} />;
+        case 'safety':
+        case 'sos':
+          return <AgentSOSView user={user} />;
+        case 'tasks':
+        case 'queue':
+          return <EmployeeDashboard user={user} initialTab="tasks" />;
+        default:
+          return <FieldDashboard user={user} />;
+      }
     }
 
-    // Attendance Tab for Field & Sales Agents
-    if (currentTab === 'attendance') {
-      if (isFieldAgent) return <FieldDashboard user={user} initialTab="shift" />;
-      if (isSalesAgent) return <SalesDashboard user={user} initialTab="attendance" />;
-      return <EmployeeDashboard user={user} initialTab="attendance" />;
-    }
-
-    // Tasks Tab
-    if (currentTab === 'tasks') {
-      return <EmployeeDashboard user={user} initialTab="tasks" />;
-    }
-
+    // Standard Non-Agent Workspaces (Management, HR, Staff, Supervisor)
     switch (currentTab) {
       case 'command_center':
         return <CommandCenterDashboard user={user} onNavigate={setCurrentTab} />;
       case 'customers':
+      case 'directory':
         return <CustomerDirectoryDashboard user={user} />;
       case 'inventory':
         return <InventoryDashboard user={user} />;
       case 'delivery':
+      case 'fleet':
         return <DeliveryDashboard user={user} />;
       case 'alerts':
         return <AlertCenterDashboard user={user} />;
@@ -182,6 +199,7 @@ export default function App() {
       case 'catalog':
       case 'intel':
       case 'settlement':
+      case 'payments':
         return <SalesDashboard user={user} />;
       case 'manifest':
       case 'shift':
@@ -201,9 +219,12 @@ export default function App() {
       case 'idle':
       case 'org':
         return <HRDashboard user={user} initialTab={currentTab} />;
+      case 'profile':
+        return <EmployeeProfileView user={user} />;
+      case 'safety':
+      case 'sos':
+        return <HRDashboard user={user} initialTab="safety" />;
       default:
-        if (isFieldAgent) return <FieldDashboard user={user} />;
-        if (isSalesAgent) return <SalesDashboard user={user} />;
         return <EmployeeDashboard user={user} />;
     }
   };

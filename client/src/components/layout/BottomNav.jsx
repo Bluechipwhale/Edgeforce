@@ -1,36 +1,30 @@
 import React from 'react';
 import {
-  LayoutDashboard,
-  ShoppingCart,
   MapPin,
-  Clock,
-  ClipboardCheck,
-  Calendar,
+  Building2,
   Users,
+  Truck,
+  WalletCards,
+  AlertTriangle,
   ShieldAlert,
-  User,
-  Building2
+  ClipboardCheck,
+  LayoutDashboard,
+  Clock
 } from 'lucide-react';
 
 export default function BottomNav({ user, currentTab, onSelectTab }) {
   const role = user?.role_code;
+  const isAgent = role === 'FIELD_AGENT' || role === 'SALES_AGENT' || role === 'BRAND_AMBASSADOR' || role === 'PROMOTER';
 
   let items = [];
 
-  if (role === 'SALES_AGENT' || role === 'BRAND_AMBASSADOR' || role === 'PROMOTER') {
+  if (isAgent) {
+    // 5 primary items on mobile from the 8 approved Agent menu items
     items = [
-      { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-      { id: 'attendance', label: 'Attendance', icon: Clock },
-      { id: 'sales', label: 'Sales', icon: ShoppingCart },
-      { id: 'customers', label: 'Stores', icon: Building2 },
-      { id: 'safety', label: 'SOS', icon: ShieldAlert, danger: true }
-    ];
-  } else if (role === 'FIELD_AGENT') {
-    items = [
-      { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-      { id: 'attendance', label: 'Attendance', icon: Clock },
       { id: 'manifest', label: 'Routes', icon: MapPin },
-      { id: 'audits', label: 'Audits', icon: ClipboardCheck },
+      { id: 'customers', label: 'Directory', icon: Users },
+      { id: 'delivery', label: 'Fleet', icon: Truck },
+      { id: 'alerts', label: 'Alerts', icon: AlertTriangle },
       { id: 'safety', label: 'SOS', icon: ShieldAlert, danger: true }
     ];
   } else if (['HR', 'HR_MANAGER', 'CEO', 'CTO', 'MANAGER', 'SUPER_ADMIN', 'ADMIN'].includes(role) || ['CEO', 'CTO', 'HR'].includes(user?.rank?.code)) {
@@ -45,7 +39,7 @@ export default function BottomNav({ user, currentTab, onSelectTab }) {
       { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
       { id: 'attendance', label: 'Timesheet', icon: Clock },
       { id: 'tasks', label: 'Tasks', icon: ClipboardCheck },
-      { id: 'profile', label: 'Profile', icon: User }
+      { id: 'profile', label: 'Profile', icon: Users }
     ];
   }
 
