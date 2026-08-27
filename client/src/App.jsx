@@ -1,52 +1,48 @@
 import React, { useState, useEffect } from 'react';
 import Shell from './components/layout/Shell';
+import LoginPage from './pages/LoginPage';
+import FirstLoginPasswordModal from './components/employee/FirstLoginPasswordModal';
+import GlobalAlertBanner from './components/layout/GlobalAlertBanner';
+
+// Role & Feature Dashboards
 import CommandCenterDashboard from './dashboards/CommandCenterDashboard';
 import CustomerDirectoryDashboard from './dashboards/CustomerDirectoryDashboard';
 import InventoryDashboard from './dashboards/InventoryDashboard';
 import DeliveryDashboard from './dashboards/DeliveryDashboard';
 import AlertCenterDashboard from './dashboards/AlertCenterDashboard';
 import ReportsCenterDashboard from './dashboards/ReportsCenterDashboard';
+import SupervisorDashboard from './dashboards/SupervisorDashboard';
 import SalesDashboard from './dashboards/SalesDashboard';
 import FieldDashboard from './dashboards/FieldDashboard';
-import SupervisorDashboard from './dashboards/SupervisorDashboard';
-import EmployeeDashboard from './dashboards/EmployeeDashboard';
-import HRDashboard from './dashboards/HRDashboard';
-import ExecutiveDashboard from './dashboards/ExecutiveDashboard';
 import AccountingDashboard from './dashboards/AccountingDashboard';
+import ExecutiveDashboard from './dashboards/ExecutiveDashboard';
 import ITAdminDashboard from './dashboards/ITAdminDashboard';
-import LoginPage from './pages/LoginPage';
-import FirstLoginPasswordModal from './components/employee/FirstLoginPasswordModal';
-import {
-  LandingPage,
-  AboutPage,
-  FeaturesPage,
-  PrivacyPage,
-  TermsPage
-} from './pages/PublicPages';
+import HRDashboard from './dashboards/HRDashboard';
+import EmployeeDashboard from './dashboards/EmployeeDashboard';
+
 import { api } from './lib/api';
 
 export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [currentTab, setCurrentTab] = useState('dashboard');
   const [dark, setDark] = useState(() => {
-    return localStorage.getItem('ewf_theme') === 'dark' ||
-      (!('ewf_theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    const saved = localStorage.getItem('ewf_theme');
+    return saved ? saved === 'dark' : false;
   });
-  const [publicPage, setPublicPage] = useState('landing');
-  const [currentTab, setCurrentTab] = useState('command_center');
 
-  // Handle Theme Toggle
+  // Check first-time login password change requirement
+  const [mustChangePassword, setMustChangePassword] = useState(false);
+
   const handleToggleTheme = () => {
-    setDark(prev => {
-      const next = !prev;
-      localStorage.setItem('ewf_theme', next ? 'dark' : 'light');
-      if (next) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-      return next;
-    });
+    const next = !dark;
+    setDark(next);
+    localStorage.setItem('ewf_theme', next ? 'dark' : 'light');
+    if (next) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
   };
 
   useEffect(() => {
@@ -92,55 +88,51 @@ export default function App() {
     }
   }, []);
 
-  const handleLoginSuccess = (loggedInUser) => {
-    setUser(loggedInUser);
-    setCurrentTab(getDefaultTabForUser(loggedInUser));
+  const handleLoginSuccess = (userData) => {
+    setUser(userData);
+    setCurrentTab(getDefaultTabForUser(userData));
+    if (userData.requires_password_change) {
+      setMustChangePassword(true);
+    }
   };
 
   const handleLogout = () => {
     localStorage.removeItem('ewf_token');
     setUser(null);
-    setPublicPage('landing');
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center text-white space-y-4">
-        <div className="w-10 h-10 border-3 border-orange-500 border-t-transparent rounded-full animate-spin" />
-        <div className="text-xs font-bold uppercase tracking-wider text-zinc-400">
-          Loading EdgeWForce OS…
+      <div className="min-h-screen flex items-center justify-center surface-bg">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-3 border-orange-500 border-t-transparent rounded-full animate-spin" />
+          <span className="text-xs font-semibold text-zinc-500">Initializing EdgeWForce Enterprise...</span>
         </div>
       </div>
     );
   }
 
-  // Not authenticated -> Public Landing / Marketing / Auth Pages
+  // Public/Auth Flows
   if (!user) {
-    if (publicPage === 'login') {
-      return (
-        <LoginPage
-          onLogin={handleLoginSuccess}
-          onNavigatePublic={(p) => setPublicPage(p)}
-        />
-      );
-    }
-    if (publicPage === 'about') {
-      return <AboutPage onNavigate={(p) => setPublicPage(p)} />;
-    }
-    if (publicPage === 'features') {
-      return <FeaturesPage onNavigate={(p) => setPublicPage(p)} />;
-    }
-    if (publicPage === 'privacy') {
-      return <PrivacyPage onNavigate={(p) => setPublicPage(p)} />;
-    }
-    if (publicPage === 'terms') {
-      return <TermsPage onNavigate={(p) => setPublicPage(p)} />;
-    }
-    return <LandingPage onNavigate={(p) => setPublicPage(p)} />;
+    return <LoginPage onLogin={handleLoginSuccess} />;
   }
 
-  // Render Role & Feature Dashboards
+  // Render Role & Feature Dashboards with RBAC Routing Guards
   const renderDashboard = () => {
+    const role = user?.role_code;
+    const isFieldAgent = role === 'FIELD_AGENT';
+    const isSalesAgent = role === 'SALES_AGENT' || role === 'BRAND_AMBASSADOR' || role === 'PROMOTER';
+
+    // Guard Field Agents from accessing admin, hr, inventory, or executive tabs
+    if (isFieldAgent && ['inventory', 'it_admin', 'executive', 'financials', 'payroll', 'overview', 'people', 'idle', 'org'].includes(currentTab)) {
+      return <FieldDashboard user={user} />;
+    }
+
+    // Guard Sales Agents from accessing admin, inventory, or hr tabs
+    if (isSalesAgent && ['inventory', 'it_admin', 'executive', 'payroll', 'overview', 'people', 'idle', 'org'].includes(currentTab)) {
+      return <SalesDashboard user={user} />;
+    }
+
     switch (currentTab) {
       case 'command_center':
         return <CommandCenterDashboard user={user} onNavigate={setCurrentTab} />;
@@ -199,17 +191,20 @@ export default function App() {
         currentTab={currentTab}
         onSelectTab={setCurrentTab}
       >
+        <GlobalAlertBanner />
         {renderDashboard()}
       </Shell>
 
-      {/* First-Login Mandatory Password Change Enforcement Modal */}
-      <FirstLoginPasswordModal
-        user={user}
-        isOpen={Boolean(user?.requires_password_change)}
-        onPasswordChanged={(updatedUser) => {
-          setUser(updatedUser);
-        }}
-      />
+      {/* Force Password Change on First-Time Access */}
+      {mustChangePassword && (
+        <FirstLoginPasswordModal
+          user={user}
+          onSuccess={() => {
+            setMustChangePassword(false);
+            setUser(prev => ({ ...prev, requires_password_change: false }));
+          }}
+        />
+      )}
     </>
   );
 }

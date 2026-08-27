@@ -10,12 +10,12 @@ import { hasRole } from '../middleware/rbac.js';
 const router = express.Router();
 
 router.use(requireAuth);
-router.use(hasRole('HR', 'CEO', 'CTO', 'IT_ADMIN', 'MANAGER', 'SUPERVISOR'));
+router.use(hasRole('HR', 'HR_MANAGER', 'CEO', 'CTO', 'IT_ADMIN', 'MANAGER', 'SUPER_ADMIN', 'ADMIN'));
 
 router.get('/dashboard', hrController.getDashboard);
 router.get('/employees', hrController.getEmployees);
-router.post('/employees/register', hrController.registerStaff);
-router.post('/staff/register', hrController.registerStaff);
+router.post('/employees/register', hasRole('HR', 'HR_MANAGER', 'CEO', 'CTO', 'IT_ADMIN', 'SUPER_ADMIN', 'ADMIN'), hrController.registerStaff);
+router.post('/staff/register', hasRole('HR', 'HR_MANAGER', 'CEO', 'CTO', 'IT_ADMIN', 'SUPER_ADMIN', 'ADMIN'), hrController.registerStaff);
 router.put('/employees/:id', hrController.updateEmployee);
 router.put('/employees/:id/status', hrController.updateStaffStatus);
 router.post('/employees/:id/resend-invitation', hrController.resendInvitation);
@@ -49,5 +49,3 @@ router.put('/employees/:id/birthday', hrController.updateBirthday);
 router.post('/birthdays/broadcast', hrController.broadcastBirthday);
 
 export default router;
-
-

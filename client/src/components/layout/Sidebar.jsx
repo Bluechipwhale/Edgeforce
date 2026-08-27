@@ -87,10 +87,7 @@ export default function Sidebar({ user, currentTab, onSelectTab, isMobile, onClo
           { id: 'sales', label: 'Sales Orders & POS Cockpit', icon: ShoppingCart },
           { id: 'customers', label: 'Customer Outlets & 360', icon: Building2 },
           { id: 'manifest', label: 'Assigned Beat Route', icon: MapPin },
-          { id: 'inventory', label: 'SKU Catalog & Stock', icon: Boxes },
           { id: 'collections', label: 'Collections & Payments', icon: WalletCards },
-          { id: 'people', label: 'Staff Roster & Hierarchy', icon: Users },
-          { id: 'org', label: 'Organization Structure', icon: Network },
           { id: 'reports', label: 'My Sales Performance', icon: FileText }
         ]
       }
@@ -104,8 +101,6 @@ export default function Sidebar({ user, currentTab, onSelectTab, isMobile, onClo
           { id: 'customers', label: 'Assigned Stores & Audits', icon: Building2 },
           { id: 'delivery', label: 'Deliveries & POD Capture', icon: Truck },
           { id: 'safety', label: 'Emergency SOS', icon: ShieldAlert },
-          { id: 'people', label: 'Staff Roster & Hierarchy', icon: Users },
-          { id: 'org', label: 'Organization Structure', icon: Network },
           { id: 'reports', label: 'My Attendance & Visits', icon: FileText }
         ]
       }
@@ -117,11 +112,10 @@ export default function Sidebar({ user, currentTab, onSelectTab, isMobile, onClo
         title: 'Employee Workspace',
         items: [
           { id: 'dashboard', label: 'Workspace Dashboard', icon: LayoutDashboard },
+          { id: 'inventory', label: 'Inventory & Stock Records', icon: Boxes },
           { id: 'attendance', label: 'My Timesheet & GPS', icon: Clock },
           { id: 'leave', label: 'Leave Requests', icon: Calendar },
           { id: 'tasks', label: 'Assigned Tasks', icon: ClipboardCheck },
-          { id: 'people', label: 'Staff Roster & Hierarchy', icon: Users },
-          { id: 'org', label: 'Organization Structure', icon: Network },
           { id: 'payslip', label: 'Compensation & Payslips', icon: FileText }
         ]
       }
@@ -150,19 +144,19 @@ export default function Sidebar({ user, currentTab, onSelectTab, isMobile, onClo
                   key={item.id}
                   onClick={() => {
                     onSelectTab(item.id);
-                    if (isMobile) onCloseMobile?.();
+                    if (isMobile && onCloseMobile) onCloseMobile();
                   }}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition ${
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition group ${
                     isActive
-                      ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md shadow-orange-500/20'
-                      : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 hover:text-zinc-900 dark:hover:text-zinc-100'
+                      ? 'bg-orange-500 text-white shadow-xs font-bold'
+                      : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 hover:text-zinc-900 dark:hover:text-zinc-100'
                   }`}
                 >
                   <div className="flex items-center gap-2.5">
-                    <Icon size={16} className={isActive ? 'text-white' : 'text-zinc-400'} />
+                    <Icon size={16} className={`transition ${isActive ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-300'}`} />
                     <span>{item.label}</span>
                   </div>
-                  {isActive && <ChevronRight size={14} className="text-white/80" />}
+                  {isActive && <ChevronRight size={13} className="text-white/80" />}
                 </button>
               );
             })}
@@ -170,17 +164,12 @@ export default function Sidebar({ user, currentTab, onSelectTab, isMobile, onClo
         ))}
       </div>
 
-      {/* Footer Identity Indicator */}
-      <div className="p-3 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
-        <div className="flex items-center gap-2 text-[11px] text-zinc-500 dark:text-zinc-400">
-          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="font-semibold text-zinc-700 dark:text-zinc-300">Live Telemetry Active</span>
-        </div>
-        <div className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5 font-medium">
-          (c) Nexfeild 2026 &bull; EdgeWForce OS
+      <div className="p-3 border-t border-zinc-200 dark:border-zinc-800 text-[11px] text-zinc-400">
+        <div className="flex items-center justify-between">
+          <span className="font-semibold text-zinc-600 dark:text-zinc-300 truncate max-w-[150px]">{user?.full_name || 'Active User'}</span>
+          <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-500">{role || 'STAFF'}</span>
         </div>
       </div>
     </aside>
-
   );
 }

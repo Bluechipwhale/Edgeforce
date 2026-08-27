@@ -3,32 +3,42 @@
 // ==============================================================================
 
 // Base role mapping to default permissions
-const ROLE_PERMISSIONS = {
+export const ROLE_PERMISSIONS = {
   SUPER_ADMIN: ['*'],
   super_admin: ['*'],
   ADMIN: ['*'],
   CEO: ['*'],
   IT_ADMIN: ['*'],
   CTO: ['*'],
-  AGENT_ADMIN: ['view_dashboard', 'view_employees', 'assign_tasks', 'view_attendance', 'manage_attendance', 'view_sales', 'create_orders', 'record_collections', 'view_customers', 'create_customers', 'view_field_operations', 'manage_routes', 'view_sos', 'manage_products', 'manage_stores', 'view_stores', 'view_reports', 'manage_field_tracking', 'view_deliveries', 'manage_inventory'],
-  agent_admin: ['view_dashboard', 'view_employees', 'assign_tasks', 'view_attendance', 'manage_attendance', 'view_sales', 'create_orders', 'record_collections', 'view_customers', 'create_customers', 'view_field_operations', 'manage_routes', 'view_sos', 'manage_products', 'manage_stores', 'view_stores', 'view_reports', 'manage_field_tracking', 'view_deliveries', 'manage_inventory'],
-  HR_MANAGER: ['view_dashboard', 'view_employees', 'create_employee', 'edit_employee', 'delete_employee', 'assign_tasks', 'approve_leave', 'view_attendance', 'manage_attendance', 'view_idle_reports', 'manage_ranks', 'view_sos', 'resolve_sos', 'view_reports', 'admin_portal'],
-  hr_manager: ['view_dashboard', 'view_employees', 'create_employee', 'edit_employee', 'delete_employee', 'assign_tasks', 'approve_leave', 'view_attendance', 'manage_attendance', 'view_idle_reports', 'manage_ranks', 'view_sos', 'resolve_sos', 'view_reports', 'admin_portal'],
-  HR: ['view_dashboard', 'view_employees', 'create_employee', 'edit_employee', 'delete_employee', 'assign_tasks', 'approve_leave', 'view_attendance', 'manage_attendance', 'view_idle_reports', 'manage_ranks', 'view_sos', 'resolve_sos', 'view_reports', 'admin_portal'],
-  SENIOR_ACCOUNTANT: ['view_dashboard', 'view_payroll', 'manage_payroll', 'record_collections', 'view_sales', 'view_reports'],
-  ACCOUNTANT: ['view_dashboard', 'view_payroll', 'manage_payroll', 'record_collections', 'view_sales'],
-  MANAGER: ['view_dashboard', 'view_employees', 'assign_tasks', 'approve_leave', 'view_attendance', 'manage_attendance', 'view_sales', 'view_field_operations', 'manage_routes', 'view_reports', 'manage_stores', 'view_stores', 'manage_field_tracking', 'view_deliveries', 'manage_inventory'],
-  SUPERVISOR: ['view_dashboard', 'assign_tasks', 'view_attendance', 'manage_attendance', 'view_field_operations', 'manage_routes', 'view_sos', 'view_reports', 'manage_stores', 'view_stores', 'manage_field_tracking', 'view_deliveries', 'manage_inventory', 'approve_orders'],
-  supervisor: ['view_dashboard', 'assign_tasks', 'view_attendance', 'manage_attendance', 'view_field_operations', 'manage_routes', 'view_sos', 'view_reports', 'manage_stores', 'view_stores', 'manage_field_tracking', 'view_deliveries', 'manage_inventory', 'approve_orders'],
-  SALES_AGENT: ['view_dashboard', 'view_sales', 'create_orders', 'record_collections', 'view_customers', 'create_customers', 'manage_products', 'view_competitors', 'view_stores', 'request_store'],
-  sales_agent: ['view_dashboard', 'view_sales', 'create_orders', 'record_collections', 'view_customers', 'create_customers', 'manage_products', 'view_competitors', 'view_stores', 'request_store'],
+  HR_MANAGER: ['view_dashboard', 'view_employees', 'create_employee', 'edit_employee', 'delete_employee', 'assign_tasks', 'approve_leave', 'view_attendance', 'manage_attendance', 'view_idle_reports', 'manage_ranks', 'view_sos', 'resolve_sos', 'view_reports', 'admin_portal', 'view_inventory', 'manage_inventory'],
+  hr_manager: ['view_dashboard', 'view_employees', 'create_employee', 'edit_employee', 'delete_employee', 'assign_tasks', 'approve_leave', 'view_attendance', 'manage_attendance', 'view_idle_reports', 'manage_ranks', 'view_sos', 'resolve_sos', 'view_reports', 'admin_portal', 'view_inventory', 'manage_inventory'],
+  HR: ['view_dashboard', 'view_employees', 'create_employee', 'edit_employee', 'delete_employee', 'assign_tasks', 'approve_leave', 'view_attendance', 'manage_attendance', 'view_idle_reports', 'manage_ranks', 'view_sos', 'resolve_sos', 'view_reports', 'admin_portal', 'view_inventory', 'manage_inventory'],
+  SENIOR_ACCOUNTANT: ['view_dashboard', 'view_payroll', 'manage_payroll', 'record_collections', 'view_sales', 'view_reports', 'view_inventory'],
+  ACCOUNTANT: ['view_dashboard', 'view_payroll', 'manage_payroll', 'record_collections', 'view_sales', 'view_inventory'],
+  MANAGER: ['view_dashboard', 'view_employees', 'assign_tasks', 'approve_leave', 'view_attendance', 'manage_attendance', 'view_sales', 'view_field_operations', 'manage_routes', 'view_reports', 'manage_stores', 'view_stores', 'manage_field_tracking', 'view_deliveries', 'manage_inventory', 'view_inventory'],
+  SUPERVISOR: ['view_dashboard', 'assign_tasks', 'view_attendance', 'manage_attendance', 'view_field_operations', 'manage_routes', 'view_sos', 'view_reports', 'manage_stores', 'view_stores', 'manage_field_tracking', 'view_deliveries', 'approve_orders', 'view_inventory'],
+  supervisor: ['view_dashboard', 'assign_tasks', 'view_attendance', 'manage_attendance', 'view_field_operations', 'manage_routes', 'view_sos', 'view_reports', 'manage_stores', 'view_stores', 'manage_field_tracking', 'view_deliveries', 'approve_orders', 'view_inventory'],
+  AGENT_ADMIN: ['view_dashboard', 'view_field_operations', 'manage_routes', 'view_sos', 'manage_stores', 'view_stores', 'view_reports', 'manage_field_tracking', 'view_deliveries'],
+  agent_admin: ['view_dashboard', 'view_field_operations', 'manage_routes', 'view_sos', 'manage_stores', 'view_stores', 'view_reports', 'manage_field_tracking', 'view_deliveries'],
+  SALES_AGENT: ['view_dashboard', 'view_sales', 'create_orders', 'record_collections', 'view_customers', 'create_customers', 'view_competitors', 'view_stores', 'request_store'],
+  sales_agent: ['view_dashboard', 'view_sales', 'create_orders', 'record_collections', 'view_customers', 'create_customers', 'view_competitors', 'view_stores', 'request_store'],
   FIELD_AGENT: ['view_dashboard', 'view_field_operations', 'view_customers', 'view_sos', 'view_stores', 'request_store'],
   field_agent: ['view_dashboard', 'view_field_operations', 'view_customers', 'view_sos', 'view_stores', 'request_store'],
-  STAFF_MEMBER: ['view_dashboard'],
-  staff: ['view_dashboard'],
-  EMPLOYEE: ['view_dashboard']
+  STAFF_MEMBER: ['view_dashboard', 'view_inventory'],
+  staff: ['view_dashboard', 'view_inventory'],
+  EMPLOYEE: ['view_dashboard', 'view_inventory']
 };
 
+/**
+ * Validates whether manager rank level is higher than subordinate rank level.
+ */
+export function validateHierarchyAssignment(managerRank, subordinateRank) {
+  if (!managerRank || !subordinateRank) return true;
+  const mgrLvl = typeof managerRank === 'object' ? managerRank.level : Number(managerRank);
+  const subLvl = typeof subordinateRank === 'object' ? subordinateRank.level : Number(subordinateRank);
+  if (isNaN(mgrLvl) || isNaN(subLvl)) return true;
+  return mgrLvl <= subLvl;
+}
 
 /**
  * Checks if current user has any of the allowed roles.
@@ -100,17 +110,4 @@ export function hasPermission(permissionCode) {
       error: { code: 'PERMISSION_DENIED', message: `Missing required permission: ${permissionCode}` }
     });
   };
-}
-
-/**
- * Validates that an employee is not attempting to assign tasks or make modifications
- * to a superior higher in the organizational hierarchy.
- */
-export function validateHierarchyAssignment(assignerRankLevel, targetRankLevel) {
-  const assignerLevel = Number(assignerRankLevel || 8);
-  const targetLevel = Number(targetRankLevel || 8);
-
-  // In our hierarchy: 1 = CEO (highest), 8 = STAFF (lowest).
-  // An assigner must have a level strictly LESS THAN or EQUAL TO target level (e.g. Level 1 can assign to Level 1..8)
-  return assignerLevel <= targetLevel;
 }
