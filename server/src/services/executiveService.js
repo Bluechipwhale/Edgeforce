@@ -65,5 +65,9 @@ export const executiveService = {
       territories: territoryList,
       recentAlerts: openSOS.slice(0, 5)
     };
+  },
+
+  async getDashboard() {
+    return this.getCEODashboardMetrics();
   }
 };

@@ -28,13 +28,15 @@ import {
   ArrowUpDown,
   FileText,
   Truck,
-  Edit3
+  Edit3,
+  Search
 } from 'lucide-react';
 import StatCard from '../components/common/StatCard';
 import Modal from '../components/common/Modal';
 import StateCitySelect from '../components/common/StateCitySelect';
 import LocationAssignmentDashboard from '../components/hr/LocationAssignmentDashboard';
 import OrgChartTree from '../components/hr/OrgChartTree';
+import StaffProfileDrawer from '../components/hr/StaffProfileDrawer';
 import { formatMoney, formatDate, formatTime } from '../lib/formatters';
 import { api } from '../lib/api';
 
@@ -43,6 +45,8 @@ export default function ITAdminDashboard({ user, onSelectTab }) {
   const [usersList, setUsersList] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
   const [systemStats, setSystemStats] = useState(null);
+  const [selectedStaffForView, setSelectedStaffForView] = useState(null);
+  const [staffSearchTerm, setStaffSearchTerm] = useState('');
   const [orgTree, setOrgTree] = useState(null);
   const [products, setProducts] = useState([]);
   const [movements, setMovements] = useState([]);
@@ -137,7 +141,7 @@ export default function ITAdminDashboard({ user, onSelectTab }) {
         api.get('/admin/settings').catch(() => ({ data: null }))
       ]);
 
-      setEmployees(emps || []);
+      setEmployees(Array.isArray(emps) ? emps : (emps?.employees || emps?.data || []));
       setAuditLogs(aud?.idle_records || []);
       setAvailableLocations(Array.isArray(locs) ? locs : (locs?.data || locs?.locations || []));
       setOrgTree(org);
@@ -388,9 +392,9 @@ export default function ITAdminDashboard({ user, onSelectTab }) {
         />
         <StatCard
           title="Cloud Engine"
-          value="Vercel + Supabase"
+          value="Online Infrastructure"
           icon={Server}
-          subtitle="Edge Serverless Node"
+          subtitle="Online Infrastructure"
         />
       </div>
 
@@ -479,17 +483,30 @@ export default function ITAdminDashboard({ user, onSelectTab }) {
                 <span>Registered Staff Accounts & Security Access</span>
               </h3>
               <p className="text-xs text-zinc-500">
-                Manage credentials, department roles, and reset staff passwords from ChangeMe123! to custom departmental keys.
+                Manage credentials, department roles, view complete 23-field personnel profiles, and reset staff passwords.
               </p>
             </div>
 
-            <button
-              onClick={() => setRegisterModalOpen(true)}
-              className="btn-primary text-xs py-1.5 px-3"
-            >
-              <UserPlus size={14} />
-              <span>Register Staff</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <Search size={14} className="absolute left-3 top-2.5 text-zinc-400" />
+                <input
+                  type="text"
+                  placeholder="Search staff, code, email, role..."
+                  className="form-input text-xs pl-8 py-1.5 rounded-xl"
+                  value={staffSearchTerm}
+                  onChange={(e) => setStaffSearchTerm(e.target.value)}
+                />
+              </div>
+
+              <button
+                onClick={() => setRegisterModalOpen(true)}
+                className="btn-primary text-xs py-1.5 px-3 bg-orange-500 text-white rounded-xl font-bold flex items-center gap-1 shrink-0"
+              >
+                <UserPlus size={14} />
+                <span>Register Staff</span>
+              </button>
+            </div>
           </div>
 
           <div className="overflow-x-auto">
@@ -503,54 +520,76 @@ export default function ITAdminDashboard({ user, onSelectTab }) {
                   <th className="pb-2">Rank</th>
                   <th className="pb-2">Contact</th>
                   <th className="pb-2">Status</th>
-                  <th className="pb-2 text-right">Security Action</th>
+                  <th className="pb-2 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-200/60 dark:divide-zinc-800/60">
-                {employees.map((e) => (
-                  <tr key={e.id} className="hover:bg-zinc-500/5 transition">
-                    <td className="py-3 font-mono font-bold text-zinc-900 dark:text-zinc-100">
-                      {e.employee_code}
-                    </td>
-                    <td className="py-3 font-bold text-zinc-900 dark:text-zinc-100">
-                      {e.first_name} {e.last_name}
-                    </td>
-                    <td className="py-3 text-zinc-600 dark:text-zinc-400">
-                      {e.department}
-                    </td>
-                    <td className="py-3 font-medium">
-                      {e.position}
-                    </td>
-                    <td className="py-3">
-                      <span className="px-2 py-0.5 rounded font-bold bg-orange-500/10 text-orange-600 dark:text-orange-400 text-[10px]">
-                        {e.rank_code || e.rank?.code || 'STAFF'}
-                      </span>
-                    </td>
-                    <td className="py-3 text-zinc-500">
-                      <div>{e.email || '—'}</div>
-                      <div className="text-[10px] text-zinc-400">{e.phone || '—'}</div>
-                    </td>
-                    <td className="py-3">
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 capitalize">
-                        {e.status || 'Active'}
-                      </span>
-                    </td>
-                    <td className="py-3 text-right">
-                      <button
-                        onClick={() => {
-                          setSelectedStaffForPassword(e);
-                          setNewStaffPassword('');
-                          setPasswordModalOpen(true);
-                        }}
-                        className="px-2.5 py-1 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 text-orange-600 dark:text-orange-400 font-bold text-[11px] transition inline-flex items-center gap-1"
-                        title="Set custom department password"
-                      >
-                        <Key size={12} />
-                        <span>Change Password</span>
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {employees
+                  .filter((e) => {
+                    const q = staffSearchTerm.toLowerCase();
+                    if (!q) return true;
+                    const name = (e.full_name || `${e.first_name || ''} ${e.last_name || ''}`).toLowerCase();
+                    const code = (e.employee_code || e.staff_id || '').toLowerCase();
+                    const dept = (e.department || '').toLowerCase();
+                    const pos = (e.position || '').toLowerCase();
+                    const email = (e.work_email || e.personal_email || e.email || '').toLowerCase();
+                    const phone = (e.phone || '').toLowerCase();
+                    return name.includes(q) || code.includes(q) || dept.includes(q) || pos.includes(q) || email.includes(q) || phone.includes(q);
+                  })
+                  .map((e) => (
+                    <tr key={e.id} className="hover:bg-zinc-500/5 transition">
+                      <td className="py-3 font-mono font-bold text-zinc-900 dark:text-zinc-100">
+                        {e.staff_id || e.employee_code}
+                      </td>
+                      <td className="py-3 font-bold text-zinc-900 dark:text-zinc-100">
+                        {e.full_name || `${e.first_name || ''} ${e.last_name || ''}`.trim() || 'Staff Member'}
+                      </td>
+                      <td className="py-3 text-zinc-600 dark:text-zinc-400">
+                        {e.department}
+                      </td>
+                      <td className="py-3 font-medium">
+                        {e.position}
+                      </td>
+                      <td className="py-3">
+                        <span className="px-2 py-0.5 rounded font-bold bg-orange-500/10 text-orange-600 dark:text-orange-400 text-[10px]">
+                          {e.rank_code || e.rank?.code || 'STAFF'}
+                        </span>
+                      </td>
+                      <td className="py-3 text-zinc-500">
+                        <div>{e.work_email || e.personal_email || e.email || '—'}</div>
+                        <div className="text-[10px] text-zinc-400">{e.phone || '—'}</div>
+                      </td>
+                      <td className="py-3">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 capitalize">
+                          {e.status || 'Active'}
+                        </span>
+                      </td>
+                      <td className="py-3 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => setSelectedStaffForView(e)}
+                            className="px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 font-bold text-[11px] transition inline-flex items-center gap-1"
+                            title="View complete 23-field personnel record"
+                          >
+                            <Eye size={12} />
+                            <span>View Profile</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedStaffForPassword(e);
+                              setNewStaffPassword('');
+                              setPasswordModalOpen(true);
+                            }}
+                            className="px-2.5 py-1 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 text-orange-600 dark:text-orange-400 font-bold text-[11px] transition inline-flex items-center gap-1"
+                            title="Set custom department password"
+                          >
+                            <Key size={12} />
+                            <span>Password</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>
@@ -897,11 +936,11 @@ export default function ITAdminDashboard({ user, onSelectTab }) {
             <div className="space-y-2 text-xs divide-y divide-zinc-200 dark:divide-zinc-800">
               <div className="flex justify-between py-2">
                 <span className="text-zinc-500">Operating System:</span>
-                <b className="text-zinc-900 dark:text-zinc-100">Vercel Serverless / Cloud-Native Node.js</b>
+                <b className="text-zinc-900 dark:text-zinc-100">Online Infrastructure</b>
               </div>
               <div className="flex justify-between py-2">
                 <span className="text-zinc-500">Hosting Architecture:</span>
-                <b className="text-zinc-900 dark:text-zinc-100">Vercel Edge Network + Serverless Functions</b>
+                <b className="text-zinc-900 dark:text-zinc-100">Online Infrastructure</b>
               </div>
               <div className="flex justify-between py-2">
                 <span className="text-zinc-500">Database Engine:</span>
@@ -1422,6 +1461,13 @@ export default function ITAdminDashboard({ user, onSelectTab }) {
           </div>
         </form>
       </Modal>
+      {/* 23-Field Detailed Staff Personnel Profile Drawer */}
+      <StaffProfileDrawer
+        employee={selectedStaffForView}
+        isOpen={Boolean(selectedStaffForView)}
+        onClose={() => setSelectedStaffForView(null)}
+        auditLogs={auditLogs}
+      />
     </div>
   );
 }

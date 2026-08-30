@@ -42,10 +42,10 @@ export default function Sidebar({ user, currentTab, onSelectTab, onLogout, isMob
 
   if (isManagement) {
     const complianceItems = [
+      { id: 'people', label: 'Staff Directory', icon: Users },
       { id: 'alerts', label: 'Alerts & Red Flag Center', icon: AlertTriangle },
       { id: 'reports', label: '15 Operational Reports', icon: FileText },
-      { id: 'safety', label: 'Emergency SOS Queue', icon: ShieldAlert },
-      { id: 'people', label: 'Staff Roster & Hierarchy', icon: Users }
+      { id: 'safety', label: 'Emergency SOS Queue', icon: ShieldAlert }
     ];
 
     if (isHROrIT) {
@@ -74,7 +74,7 @@ export default function Sidebar({ user, currentTab, onSelectTab, onLogout, isMob
         ]
       },
       {
-        title: 'Compliance & Intelligence',
+        title: 'Workforce & Intelligence',
         items: complianceItems
       }
     ];
@@ -102,6 +102,7 @@ export default function Sidebar({ user, currentTab, onSelectTab, onLogout, isMob
         title: 'Employee Workspace',
         items: [
           { id: 'dashboard', label: 'Workspace Dashboard', icon: LayoutDashboard },
+          { id: 'staff_directory', label: 'Staff Directory', icon: Users },
           { id: 'inventory', label: 'Inventory & Stock Records', icon: Boxes },
           { id: 'attendance', label: 'My Timesheet & GPS', icon: Clock },
           { id: 'leave', label: 'Leave Requests', icon: Calendar },

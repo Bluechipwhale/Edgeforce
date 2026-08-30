@@ -30,7 +30,7 @@ export default function App() {
   const [currentTab, setCurrentTab] = useState('dashboard');
   const [dark, setDark] = useState(() => {
     const saved = localStorage.getItem('ewf_theme');
-    return saved ? saved === 'dark' : false;
+    return saved ? saved === 'dark' : true;
   });
 
   // Check first-time login password change requirement
@@ -125,33 +125,37 @@ export default function App() {
     const role = user?.role_code;
     const isAgent = ['FIELD_AGENT', 'SALES_AGENT', 'BRAND_AMBASSADOR', 'PROMOTER'].includes(role);
 
-    // Strict Agent Confinement: Only the 8 authorized Agent views are accessible
+    // Field Agent: Full access to the brand new 8-module Field Force Interface
+    if (role === 'FIELD_AGENT') {
+      return <FieldDashboard user={user} initialTab={currentTab} onSelectTab={setCurrentTab} />;
+    }
+
+    // Other Operational Agents (Sales Agents, Promoters, Brand Ambassadors)
     if (isAgent) {
       const allowedAgentTabs = [
-        'manifest',       // 1. Field Routes & Geofencing
-        'customer_360',   // 2. Customer 360
-        'customers',      // 3. Directory
+        'manifest',
+        'customer_360',
+        'customers',
         'directory',
-        'delivery',       // 4. Fleet
+        'delivery',
         'fleet',
-        'payments',       // 5. Proof of Payment
+        'payments',
         'settlement',
         'collections',
-        'alerts',         // 6. Alert & Red Flag Center
-        'safety',         // 7. Emergency SOS
+        'alerts',
+        'safety',
         'sos',
-        'tasks',          // 8. Queue
+        'tasks',
         'queue'
       ];
 
-      // If Agent enters an unauthorized URL / tab, strictly fallback to Field Routes & Geofencing
       if (!allowedAgentTabs.includes(currentTab)) {
-        return <FieldDashboard user={user} />;
+        return <FieldDashboard user={user} initialTab="manifest" onSelectTab={setCurrentTab} />;
       }
 
       switch (currentTab) {
         case 'manifest':
-          return <FieldDashboard user={user} />;
+          return <FieldDashboard user={user} initialTab="manifest" onSelectTab={setCurrentTab} />;
         case 'customer_360':
         case 'customers':
         case 'directory':
@@ -172,7 +176,7 @@ export default function App() {
         case 'queue':
           return <EmployeeDashboard user={user} initialTab="tasks" />;
         default:
-          return <FieldDashboard user={user} />;
+          return <FieldDashboard user={user} initialTab="manifest" onSelectTab={setCurrentTab} />;
       }
     }
 
@@ -215,17 +219,20 @@ export default function App() {
         return <ITAdminDashboard user={user} onSelectTab={setCurrentTab} />;
       case 'overview':
       case 'people':
+      case 'staff':
       case 'leave':
       case 'idle':
       case 'org':
-        return <HRDashboard user={user} initialTab={currentTab} />;
+        return <HRDashboard user={user} initialTab={currentTab === 'staff' ? 'people' : currentTab} />;
+      case 'staff_directory':
+        return <EmployeeDashboard user={user} initialTab="directory" />;
       case 'profile':
         return <EmployeeProfileView user={user} />;
       case 'safety':
       case 'sos':
         return <HRDashboard user={user} initialTab="safety" />;
       default:
-        return <EmployeeDashboard user={user} />;
+        return <EmployeeDashboard user={user} initialTab={currentTab} />;
     }
   };
 

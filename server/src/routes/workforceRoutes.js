@@ -4,9 +4,13 @@
 
 import express from 'express';
 import { db } from '../config/database.js';
+import { hrController } from '../controllers/hrController.js';
 import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
+
+router.get('/employees', requireAuth, hrController.getEmployees);
+router.get('/staff', requireAuth, hrController.getEmployees);
 
 router.get('/ranks', async (req, res) => {
   try {

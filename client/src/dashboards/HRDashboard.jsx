@@ -160,11 +160,11 @@ export default function HRDashboard({ user, initialTab = 'overview' }) {
       ]);
 
       if (st) setStats(st);
-      setEmployees(emp || []);
-      setAttendance(att || []);
-      setIdleEvents(idl || []);
-      setLeaveRequests(lv || []);
-      setTasks(tsk || []);
+      setEmployees(Array.isArray(emp) ? emp : (emp?.employees || emp?.data || []));
+      setAttendance(Array.isArray(att) ? att : (att?.records || att?.data || []));
+      setIdleEvents(Array.isArray(idl) ? idl : (idl?.records || idl?.data || []));
+      setLeaveRequests(Array.isArray(lv) ? lv : (lv?.requests || lv?.data || []));
+      setTasks(Array.isArray(tsk) ? tsk : (tsk?.tasks || tsk?.data || []));
       setSOSEvents(sos || []);
       setOrgTree(org);
       setRanks(rnk || []);
@@ -657,7 +657,7 @@ export default function HRDashboard({ user, initialTab = 'overview' }) {
             >
               <div className="text-[10px] font-bold uppercase text-emerald-600 dark:text-emerald-400">Active Accounts</div>
               <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">
-                {employees.filter(e => e.status === 'active').length}
+                {employees.filter(e => (e.status || 'active').toLowerCase() === 'active').length}
               </div>
               <div className="text-[11px] text-zinc-500 mt-0.5">Provisioned & operational</div>
             </div>
@@ -776,11 +776,12 @@ export default function HRDashboard({ user, initialTab = 'overview' }) {
                         location.includes(term);
 
                       const matchesDept = staffDeptFilter === 'ALL' || emp.department === staffDeptFilter;
+                      const empStatus = (emp.status || 'active').toLowerCase();
                       const matchesStatus =
                         staffStatusFilter === 'ALL' ||
                         (staffStatusFilter === 'flagged' && emp.flagged_for_review) ||
-                        (staffStatusFilter === 'active' && emp.status === 'active') ||
-                        (staffStatusFilter === 'suspended' && emp.status === 'suspended');
+                        (staffStatusFilter === 'active' && empStatus === 'active') ||
+                        (staffStatusFilter === 'suspended' && empStatus === 'suspended');
 
                       return matchesSearch && matchesDept && matchesStatus;
                     })

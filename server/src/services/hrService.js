@@ -118,12 +118,38 @@ export const hrService = {
         delete sanitizedEmp.performance_score;
       }
 
+      const first_name = sanitizedEmp.first_name || (sanitizedEmp.full_name ? sanitizedEmp.full_name.split(' ')[0] : '') || user?.full_name?.split(' ')[0] || '';
+      const last_name = sanitizedEmp.last_name || (sanitizedEmp.full_name ? sanitizedEmp.full_name.split(' ').slice(1).join(' ') : '') || user?.full_name?.split(' ').slice(1).join(' ') || '';
+      const full_name = sanitizedEmp.full_name || `${first_name} ${last_name}`.trim() || user?.full_name || 'Staff Member';
+      const email = sanitizedEmp.work_email || sanitizedEmp.email || user?.email || sanitizedEmp.personal_email || '';
+      const work_email = sanitizedEmp.work_email || email;
+      const phone = sanitizedEmp.phone || user?.phone || '';
+      const employee_code = sanitizedEmp.employee_code || (sanitizedEmp.staff_id ? `EMP-${sanitizedEmp.staff_id}` : `EMP-${sanitizedEmp.id + 1000}`);
+      const staff_id = sanitizedEmp.staff_id || employee_code;
+      const work_location = sanitizedEmp.work_location || sanitizedEmp.territory || sanitizedEmp.city || sanitizedEmp.state || 'Headquarters';
+      const department_name = sanitizedEmp.department || department?.name || 'Operations';
+      const position = sanitizedEmp.position || 'Staff Member';
+      const status = (sanitizedEmp.status || user?.status || 'active').toLowerCase();
+      const rank_code = sanitizedEmp.rank_code || rank?.code || 'STAFF';
+
       return {
         ...sanitizedEmp,
+        first_name,
+        last_name,
+        full_name,
+        email,
+        work_email,
+        phone,
+        employee_code,
+        staff_id,
+        work_location,
+        department: department_name,
+        position,
         rank,
+        rank_code,
         department_info: department,
-        user_status: user?.status || sanitizedEmp.status || 'active',
-        email: user?.email || sanitizedEmp.work_email || sanitizedEmp.personal_email || ''
+        user_status: (user?.status || status).toLowerCase(),
+        status
       };
     });
   },
@@ -600,8 +626,12 @@ export const hrService = {
     });
 
     const allEmps = await db.find('employees');
-    const nextNum = allEmps.length + 1001;
-    const employee_code = `EMP-${nextNum}`;
+    const maxCode = allEmps.reduce((max, e) => {
+      const num = parseInt(String(e.employee_code || '').replace(/\D/g, ''), 10);
+      return !isNaN(num) && num > max ? num : max;
+    }, 1000);
+    const nextNum = Math.max(allEmps.length + 1001, maxCode + 1);
+    const employee_code = staffData.employee_code || (staffData.staff_id ? `EMP-${staffData.staff_id}` : `EMP-${nextNum}`);
 
     const employee = await db.insert('employees', {
       company_id: Number(staffData.company_id || actor?.company_id || req?.user?.company_id || 1),
@@ -609,12 +639,15 @@ export const hrService = {
       employee_code,
       first_name,
       last_name,
+      full_name: `${first_name} ${last_name}`,
       email: normalizedEmail,
+      work_email: normalizedEmail,
       phone: normalizedPhone,
       department_id: Number(department_id || 1),
       department: department || 'Commercial Sales',
       position: position || 'Operations Officer',
       territory: territory || 'Headquarters',
+      work_location: staffData.work_location || territory || 'Headquarters',
       state: staffData.state || 'Lagos',
       lga: staffData.lga || '',
       city: staffData.city || '',

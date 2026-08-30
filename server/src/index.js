@@ -32,6 +32,7 @@ import locationRoutes from './routes/locationRoutes.js';
 import { requireAuth } from './middleware/auth.js';
 import { employeeService } from './services/employeeService.js';
 import { reminderWorker } from './services/reminderWorker.js';
+import { staffImportService } from './services/staffImportService.js';
 import { logger } from './utils/logger.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -168,6 +169,9 @@ if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
     logger.info(`EdgeWForce Backend Server operational on port ${PORT}`);
     logger.info(`API Base URL: http://localhost:${PORT}/api`);
     reminderWorker.start(15000);
+    staffImportService.importAuthoritativeStaff().catch(err => {
+      logger.warn(`Staff sync note: ${err.message}`);
+    });
   });
 }
 

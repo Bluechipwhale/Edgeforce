@@ -48,6 +48,27 @@ export const authService = {
       }
     }
 
+    // Fallback: Support login via Staff ID / Employee Code (e.g. EMP-1001, EMP-003, 003)
+    if (!user) {
+      const employees = await db.find('employees');
+      const cleanInput = trimmedInput.toUpperCase();
+      const numOnly = cleanInput.replace(/[^0-9]/g, '');
+      const emp = employees.find(e => {
+        const empCode = (e.employee_code || '').toUpperCase();
+        const staffId = String(e.staff_id || '').toUpperCase();
+        const empNum = empCode.replace(/[^0-9]/g, '');
+        return (
+          empCode === cleanInput ||
+          staffId === cleanInput ||
+          (numOnly && empNum === numOnly) ||
+          (numOnly && staffId === numOnly)
+        );
+      });
+      if (emp?.user_id) {
+        user = await db.findById('users', emp.user_id);
+      }
+    }
+
     if (!user) {
       throw new Error('Invalid login credentials.');
     }

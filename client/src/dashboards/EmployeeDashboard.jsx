@@ -30,8 +30,14 @@ import { formatMoney, formatDate, formatTime } from '../lib/formatters';
 import { getCurrentGPSLocation } from '../lib/geo';
 import { api } from '../lib/api';
 
-export default function EmployeeDashboard({ user }) {
-  const [tab, setTab] = useState('dashboard');
+export default function EmployeeDashboard({ user, initialTab = 'dashboard' }) {
+  const [tab, setTab] = useState(initialTab || 'dashboard');
+
+  useEffect(() => {
+    if (initialTab) {
+      setTab(initialTab === 'staff_directory' ? 'directory' : initialTab);
+    }
+  }, [initialTab]);
 
   const [dashboardData, setDashboardData] = useState(null);
   const [attendanceRecords, setAttendanceRecords] = useState([]);
@@ -607,6 +613,16 @@ export default function EmployeeDashboard({ user }) {
       {/* TAB 7: GEO-LOCATION REPORT */}
       {tab === 'geolocation' && (
         <GeoLocationReportView user={user} defaultRoleFilter="ALL" />
+      )}
+
+      {/* TAB 8: STAFF & COLLEAGUE DIRECTORY */}
+      {(tab === 'directory' || tab === 'staff_directory') && (
+        <PublicStaffDirectoryView />
+      )}
+
+      {/* TAB 9: EMPLOYEE OWN PROFILE */}
+      {tab === 'profile' && (
+        <EmployeeProfileView user={user} />
       )}
 
       {/* Modals */}

@@ -4,6 +4,7 @@
 
 import express from 'express';
 import { employeeController } from '../controllers/employeeController.js';
+import { hrController } from '../controllers/hrController.js';
 import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -12,6 +13,8 @@ router.use(requireAuth);
 
 router.get('/dashboard', employeeController.getDashboard);
 router.get('/profile', employeeController.getProfile);
+router.get('/directory', hrController.getEmployees);
+router.get('/colleagues', hrController.getEmployees);
 router.get('/attendance', employeeController.getAttendance);
 router.post('/attendance/clock', employeeController.clockAttendance);
 router.post('/face/verify', employeeController.verifyFaceBiometric);
@@ -29,4 +32,3 @@ router.get('/announcements', employeeController.getAnnouncements);
 router.get('/birthdays', employeeController.getUpcomingBirthdays);
 
 export default router;
-

@@ -188,12 +188,17 @@ export const adminService = {
     const bcrypt = (await import('bcryptjs')).default;
     const passwordHash = bcrypt.hashSync(newPassword.trim(), 10);
 
-    // Find linked user by email or phone
-    const users = await db.find('users');
-    const user = users.find(u =>
-      (emp.email && u.email && u.email.toLowerCase() === emp.email.toLowerCase()) ||
-      (emp.phone && u.phone === emp.phone)
-    );
+    // Find linked user by user_id, email, work_email or phone
+    let user = emp.user_id ? await db.findById('users', emp.user_id) : null;
+    if (!user) {
+      const users = await db.find('users');
+      user = users.find(u =>
+        (emp.email && u.email && u.email.toLowerCase() === emp.email.toLowerCase()) ||
+        (emp.work_email && u.email && u.email.toLowerCase() === emp.work_email.toLowerCase()) ||
+        (emp.personal_email && u.email && u.email.toLowerCase() === emp.personal_email.toLowerCase()) ||
+        (emp.phone && u.phone === emp.phone)
+      );
+    }
 
     if (user) {
       await db.update('users', user.id, { password_hash: passwordHash });

@@ -22,14 +22,15 @@ export default function PublicStaffDirectoryView() {
   const departments = ['ALL', ...new Set(employees.map(e => e.department).filter(Boolean))];
 
   const filteredEmployees = employees.filter(e => {
-    const term = search.toLowerCase();
+    const term = search.toLowerCase().trim();
     const name = (e.full_name || `${e.first_name || ''} ${e.last_name || ''}`).toLowerCase();
-    const pos = (e.position || '').toLowerCase();
-    const dept = (e.department || '').toLowerCase();
-    const email = (e.work_email || e.email || '').toLowerCase();
-    const staffId = (e.staff_id || e.employee_code || '').toLowerCase();
+    const pos = String(e.position || '').toLowerCase();
+    const dept = String(e.department || '').toLowerCase();
+    const email = String(e.work_email || e.personal_email || e.email || '').toLowerCase();
+    const staffId = String(e.staff_id || e.employee_code || '').toLowerCase();
+    const location = String(e.work_location || '').toLowerCase();
 
-    const matchesSearch = !term || name.includes(term) || pos.includes(term) || dept.includes(term) || email.includes(term) || staffId.includes(term);
+    const matchesSearch = !term || name.includes(term) || pos.includes(term) || dept.includes(term) || email.includes(term) || staffId.includes(term) || location.includes(term);
     const matchesDept = deptFilter === 'ALL' || e.department === deptFilter;
 
     return matchesSearch && matchesDept;
