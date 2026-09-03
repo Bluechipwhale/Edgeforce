@@ -55,7 +55,7 @@ export default function Sidebar({ user, currentTab, onSelectTab, onLogout, isMob
       complianceItems.push({ id: 'org', label: 'Organization Chart', icon: Building2 });
     }
 
-    complianceItems.push({ id: 'it_admin', label: 'Company Settings', icon: Settings });
+    complianceItems.push({ id: 'it_admin', label: 'IT Admin & System Operations', icon: Settings });
 
     navSections = [
       {
