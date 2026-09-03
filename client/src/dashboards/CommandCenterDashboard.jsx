@@ -240,6 +240,8 @@ export default function CommandCenterDashboard({ user, onNavigate, initialView =
     loadCommandCenterData();
   }, [dateFilter, regionFilter]);
 
+  const activeSosList = Array.isArray(sosEvents) ? sosEvents.filter(s => s.status === 'active') : [];
+
   return (
     <div className="p-4 lg:p-8 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-200">
       {/* 1. Header & Greeting */}
