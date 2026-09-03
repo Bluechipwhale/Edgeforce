@@ -5,6 +5,7 @@
 import express from 'express';
 import { employeeController } from '../controllers/employeeController.js';
 import { hrController } from '../controllers/hrController.js';
+import { scheduleController } from '../controllers/scheduleController.js';
 import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -30,5 +31,12 @@ router.put('/tasks/:id', employeeController.updateTask);
 router.post('/idle-events', employeeController.logIdleEvent);
 router.get('/announcements', employeeController.getAnnouncements);
 router.get('/birthdays', employeeController.getUpcomingBirthdays);
+
+// Daily Scheduler Self-Service Endpoints
+router.get('/schedule', scheduleController.getMySchedules);
+router.get('/schedule/today', scheduleController.getTodaySchedule);
+router.post('/schedule', scheduleController.submitSchedule);
+router.put('/schedule/:id/tasks/:taskId', scheduleController.updateTaskStatus);
+router.delete('/schedule/:id', scheduleController.deleteSchedule);
 
 export default router;

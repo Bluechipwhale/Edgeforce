@@ -10,6 +10,7 @@ import {
   ClipboardCheck,
   ShieldAlert,
   Calendar,
+  CalendarCheck,
   FileText,
   ChevronRight,
   Truck,
@@ -30,11 +31,12 @@ export default function Sidebar({ user, currentTab, onSelectTab, onLogout, isMob
     ['IT_ADMIN', 'CEO', 'CTO', 'HR', 'MANAGER'].includes(rank) ||
     user?.email === 'admin@edgewforce.com';
 
-  const isHROrIT = ['SUPER_ADMIN', 'ADMIN', 'IT_ADMIN', 'HR_MANAGER', 'HR'].includes(role) ||
-    ['IT_ADMIN', 'HR'].includes(rank) ||
+  const isHROrIT = ['SUPER_ADMIN', 'ADMIN', 'IT_ADMIN', 'HR_MANAGER', 'HR', 'CEO', 'CTO'].includes(role) ||
+    ['IT_ADMIN', 'HR', 'CEO', 'CTO'].includes(rank) ||
     user?.email === 'admin@edgewforce.com' ||
     user?.email === 'it@edgewforce.com' ||
-    user?.email === 'hr@edgewforce.com';
+    user?.email === 'hr@edgewforce.com' ||
+    user?.email === 'ceo@edgewforce.com';
 
   const isAgent = role === 'FIELD_AGENT' || role === 'SALES_AGENT' || role === 'BRAND_AMBASSADOR' || role === 'PROMOTER';
 
@@ -43,6 +45,7 @@ export default function Sidebar({ user, currentTab, onSelectTab, onLogout, isMob
   if (isManagement) {
     const complianceItems = [
       { id: 'people', label: 'Staff Directory', icon: Users },
+      { id: 'hr_schedules', label: 'Daily Schedules Roster', icon: CalendarCheck },
       { id: 'alerts', label: 'Alerts & Red Flag Center', icon: AlertTriangle },
       { id: 'reports', label: '15 Operational Reports', icon: FileText },
       { id: 'safety', label: 'Emergency SOS Queue', icon: ShieldAlert }
@@ -60,6 +63,7 @@ export default function Sidebar({ user, currentTab, onSelectTab, onLogout, isMob
         items: [
           { id: 'command_center', label: 'Executive Command Center', icon: LayoutDashboard },
           { id: 'supervisor_dashboard', label: 'Workforce 360 & Live Radar', icon: MapPin },
+          { id: 'team_schedules', label: 'Team Daily Schedules', icon: CalendarCheck },
           { id: 'customers', label: 'Customer 360 Directory', icon: Building2 },
           { id: 'manifest', label: 'Field Routes & Geofencing', icon: MapPin }
         ]
@@ -79,11 +83,12 @@ export default function Sidebar({ user, currentTab, onSelectTab, onLogout, isMob
       }
     ];
   } else if (isAgent) {
-    // STRICT AGENT MENU: EXACTLY THESE 8 ITEMS ONLY
+    // STRICT AGENT MENU: 8 Primary items + Schedule
     navSections = [
       {
         title: 'Agent Operations',
         items: [
+          { id: 'schedule', label: 'My Daily Schedule', icon: CalendarCheck },
           { id: 'manifest', label: 'Field Routes & Geofencing', icon: MapPin },
           { id: 'customer_360', label: 'Customer 360', icon: Building2 },
           { id: 'customers', label: 'Directory', icon: Users },
@@ -102,6 +107,7 @@ export default function Sidebar({ user, currentTab, onSelectTab, onLogout, isMob
         title: 'Employee Workspace',
         items: [
           { id: 'dashboard', label: 'Workspace Dashboard', icon: LayoutDashboard },
+          { id: 'schedule', label: 'Daily Schedule & Planner', icon: CalendarCheck },
           { id: 'staff_directory', label: 'Staff Directory', icon: Users },
           { id: 'inventory', label: 'Inventory & Stock Records', icon: Boxes },
           { id: 'attendance', label: 'My Timesheet & GPS', icon: Clock },

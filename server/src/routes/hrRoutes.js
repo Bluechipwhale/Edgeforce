@@ -4,6 +4,7 @@
 
 import express from 'express';
 import { hrController } from '../controllers/hrController.js';
+import { scheduleController } from '../controllers/scheduleController.js';
 import { requireAuth } from '../middleware/auth.js';
 import { hasRole } from '../middleware/rbac.js';
 
@@ -49,5 +50,9 @@ router.delete('/announcements/:id', hasRole('HR', 'HR_MANAGER', 'CEO', 'CTO', 'I
 // Staff Birthdays & Milestones
 router.put('/employees/:id/birthday', hasRole('HR', 'HR_MANAGER', 'CEO', 'CTO', 'IT_ADMIN', 'SUPER_ADMIN', 'ADMIN'), hrController.updateBirthday);
 router.post('/birthdays/broadcast', hasRole('HR', 'HR_MANAGER', 'CEO', 'CTO', 'IT_ADMIN', 'SUPER_ADMIN', 'ADMIN'), hrController.broadcastBirthday);
+
+// Daily Schedules & Workforce Roster
+router.get('/schedules', hasRole('HR', 'HR_MANAGER', 'CEO', 'CTO', 'IT_ADMIN', 'SUPER_ADMIN', 'ADMIN', 'MANAGER'), scheduleController.getHRSchedules);
+router.put('/schedules/:id/review', hasRole('HR', 'HR_MANAGER', 'CEO', 'CTO', 'IT_ADMIN', 'SUPER_ADMIN', 'ADMIN'), scheduleController.reviewHRSchedule);
 
 export default router;

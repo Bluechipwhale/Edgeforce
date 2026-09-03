@@ -31,6 +31,7 @@ import {
   Search,
   Filter,
   ShieldCheck,
+  CalendarCheck,
   RefreshCw
 } from 'lucide-react';
 import StatCard from '../components/common/StatCard';
@@ -42,6 +43,7 @@ import StateCitySelect from '../components/common/StateCitySelect';
 import LocationAssignmentDashboard from '../components/hr/LocationAssignmentDashboard';
 import StaffProfileDrawer from '../components/hr/StaffProfileDrawer';
 import StaffEditModal from '../components/hr/StaffEditModal';
+import HRScheduleCenter from '../components/schedule/HRScheduleCenter';
 import { TodayTaskCenter } from '../components/tasks/TodayTaskCenter';
 import { TaskCreateModal } from '../components/tasks/TaskCreateModal';
 import { formatMoney, formatDate, formatTime } from '../lib/formatters';
@@ -441,6 +443,7 @@ export default function HRDashboard({ user, initialTab = 'overview' }) {
       <div className="flex gap-2 border-b border-zinc-200 dark:border-zinc-800 pb-2 overflow-x-auto text-xs font-bold">
         {[
           { id: 'overview', label: 'Overview', icon: Activity },
+          { id: 'schedules', label: 'Daily Schedules Roster', icon: CalendarCheck },
           { id: 'safety', label: `Field SOS & Safety (${sosEvents.filter(s => s.status === 'active').length ? '🚨 ' + sosEvents.filter(s => s.status === 'active').length + ' ACTIVE' : sosEvents.length})`, icon: ShieldAlert },
           { id: 'locations', label: 'Work Locations & Geofence', icon: Building2 },
           { id: 'people', label: `Staff Directory (${employees.length})`, icon: Users },
@@ -1339,6 +1342,10 @@ export default function HRDashboard({ user, initialTab = 'overview' }) {
         </div>
       )}
 
+      {/* TAB: DAILY WORKFORCE SCHEDULES & ROSTER */}
+      {tab === 'schedules' && (
+        <HRScheduleCenter user={user} />
+      )}
 
       {/* MODAL: REGISTER NEW STAFF WITH PASSWORD FIELD */}
       <Modal

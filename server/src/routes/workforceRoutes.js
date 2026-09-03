@@ -7,10 +7,27 @@ import { db } from '../config/database.js';
 import { hrController } from '../controllers/hrController.js';
 import { requireAuth } from '../middleware/auth.js';
 
+import { scheduleController } from '../controllers/scheduleController.js';
+import { hasRole } from '../middleware/rbac.js';
+
 const router = express.Router();
 
 router.get('/employees', requireAuth, hrController.getEmployees);
 router.get('/staff', requireAuth, hrController.getEmployees);
+
+// Supervisor Schedule Review Endpoints
+router.get(
+  '/schedules',
+  requireAuth,
+  hasRole('SUPERVISOR', 'MANAGER', 'CEO', 'CTO', 'HR', 'HR_MANAGER', 'IT_ADMIN', 'SUPER_ADMIN', 'ADMIN'),
+  scheduleController.getSupervisorSchedules
+);
+router.put(
+  '/schedules/:id/review',
+  requireAuth,
+  hasRole('SUPERVISOR', 'MANAGER', 'CEO', 'CTO', 'HR', 'HR_MANAGER', 'IT_ADMIN', 'SUPER_ADMIN', 'ADMIN'),
+  scheduleController.reviewSupervisorSchedule
+);
 
 router.get('/ranks', async (req, res) => {
   try {

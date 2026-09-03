@@ -11,6 +11,7 @@ import {
   Settings,
   Truck,
   DollarSign,
+  CalendarCheck,
   ArrowRight,
   X
 } from 'lucide-react';
@@ -27,6 +28,8 @@ export default function CommandPalette({
   const inputRef = useRef(null);
 
   const quickActions = [
+    { id: 'cmd_schedule', title: 'My Daily Schedule & Planner', category: 'Workforce', icon: CalendarCheck, tab: 'schedule' },
+    { id: 'cmd_team_schedules', title: 'Team Daily Schedules & Route Approvals', category: 'Supervision', icon: CalendarCheck, tab: 'team_schedules' },
     { id: 'cmd_dash', title: 'Go to Command Center', category: 'Navigation', icon: Building2, tab: 'command_center' },
     { id: 'cmd_workforce', title: 'Workforce & Live Radar', category: 'Navigation', icon: Users, tab: 'supervisor_dashboard' },
     { id: 'cmd_customers', title: 'Customer 360 & Directory', category: 'Customers', icon: Building2, tab: 'customers' },

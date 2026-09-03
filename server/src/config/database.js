@@ -213,6 +213,145 @@ const initialSeed = {
     { id: 5, name: "Christmas Day", date: '2026-12-25', description: 'Christmas Day', year: 2026 },
     { id: 6, name: "Boxing Day", date: '2026-12-26', description: 'Boxing Day', year: 2026 }
   ],
+  schedules: [
+    {
+      id: 1,
+      company_id: 1,
+      employee_id: 4,
+      employee_name: 'Thompson Babatunde',
+      employee_code: 'EMP-1004',
+      department: 'Commercial Sales',
+      position: 'Senior Commercial Sales Agent',
+      date: '2026-09-02',
+      title: 'Commercial Key Account Restock & POS Territory Audits',
+      shift_start: '08:00',
+      shift_end: '17:00',
+      work_location: 'Lagos Mainland / Surulere Retail Zone',
+      tasks: [
+        {
+          id: 'task-1',
+          time_start: '08:30',
+          time_end: '10:00',
+          activity: 'Morning Commercial Briefing & SKU Allocation Check',
+          category: 'Admin / Office',
+          location: 'Mainland Regional Hub',
+          priority: 'NORMAL',
+          notes: 'Review promotional SKUs and distributor trade margins.',
+          status: 'Completed'
+        },
+        {
+          id: 'task-2',
+          time_start: '10:30',
+          time_end: '12:30',
+          activity: 'Key Account Shelf Restock Audit at Alhaji Bello Supermarket',
+          category: 'Client Visit',
+          location: 'Surulere Retail Corridor',
+          priority: 'HIGH',
+          notes: 'Inspect shelf share, verify POS terminal connectivity.',
+          status: 'Completed'
+        },
+        {
+          id: 'task-3',
+          time_start: '13:30',
+          time_end: '15:30',
+          activity: 'B2B Merchant Direct Prospecting & Onboarding',
+          category: 'Sales Prospecting',
+          location: 'Bode Thomas Commercial Strip',
+          priority: 'HIGH',
+          notes: 'Target 4 new retail storefront accounts for wholesale catalog.',
+          status: 'In Progress'
+        },
+        {
+          id: 'task-4',
+          time_start: '16:00',
+          time_end: '17:00',
+          activity: 'Daily Cash Settlement & EOD Reconciliations',
+          category: 'Admin / Office',
+          location: 'Mainland Regional Hub',
+          priority: 'NORMAL',
+          notes: 'Reconcile physical stock receipts with ERP sales orders.',
+          status: 'Planned'
+        }
+      ],
+      total_planned_hours: 8,
+      notes: 'Focus on scaling Q3 volume and closing overdue collections.',
+      status: 'SUBMITTED',
+      submitted_at: '2026-09-02T07:45:00.000Z',
+      supervisor_id: 7,
+      supervisor_name: 'Amina Bello',
+      supervisor_status: 'PENDING',
+      supervisor_reviewed_at: null,
+      supervisor_notes: null,
+      hr_status: 'PENDING',
+      hr_reviewed_at: null,
+      hr_notes: null,
+      created_at: '2026-09-02T07:45:00.000Z',
+      updated_at: '2026-09-02T07:45:00.000Z'
+    },
+    {
+      id: 2,
+      company_id: 1,
+      employee_id: 5,
+      employee_name: 'Godfrey Okorie',
+      employee_code: 'EMP-1005',
+      department: 'Field Operations',
+      position: 'Field Operations Lead Agent',
+      date: '2026-09-02',
+      title: 'Lagos Island Retail Store Compliance & Geofence Audits',
+      shift_start: '08:00',
+      shift_end: '17:00',
+      work_location: 'Lagos Island & Lekki Phase 1',
+      tasks: [
+        {
+          id: 'task-201',
+          time_start: '08:30',
+          time_end: '11:00',
+          activity: 'Store Geofence Radius Verification & Signage Audit',
+          category: 'Field Audit',
+          location: 'Victoria Island Mega Outlet',
+          priority: 'NORMAL',
+          notes: 'Verify 150m GPS geofence compliance and outdoor banner visibility.',
+          status: 'Completed'
+        },
+        {
+          id: 'task-202',
+          time_start: '11:30',
+          time_end: '14:00',
+          activity: 'Fast-Moving Goods Inventory Count & Stock Reorder',
+          category: 'Field Audit',
+          location: 'Lekki Admiralty Mall',
+          priority: 'HIGH',
+          notes: 'Check expiration dates and scan barcoded packaging.',
+          status: 'In Progress'
+        },
+        {
+          id: 'task-203',
+          time_start: '14:30',
+          time_end: '16:30',
+          activity: 'Merchant Satisfaction Review & Dispute Resolution',
+          category: 'Client Visit',
+          location: 'Oniru Market Trade Center',
+          priority: 'NORMAL',
+          notes: 'Collect client feedback on logistics turnaround times.',
+          status: 'Planned'
+        }
+      ],
+      total_planned_hours: 8,
+      notes: 'Territory inspection for Lagos Island operations.',
+      status: 'APPROVED',
+      submitted_at: '2026-09-02T07:30:00.000Z',
+      supervisor_id: 7,
+      supervisor_name: 'Amina Bello',
+      supervisor_status: 'APPROVED',
+      supervisor_reviewed_at: '2026-09-02T08:15:00.000Z',
+      supervisor_notes: 'Approved. Ensure high-resolution shelf photos are uploaded for Admiralty Mall.',
+      hr_status: 'ACKNOWLEDGED',
+      hr_reviewed_at: '2026-09-02T08:30:00.000Z',
+      hr_notes: 'Logged into workforce daily roster.',
+      created_at: '2026-09-02T07:30:00.000Z',
+      updated_at: '2026-09-02T08:15:00.000Z'
+    }
+  ],
   settlements: [],
   sos: [],
   idle_alerts: [],
@@ -239,6 +378,7 @@ function loadPersistedStore() {
       store.permissions = loaded.permissions?.length ? loaded.permissions : initialSeed.permissions;
       store.users = loaded.users?.length ? loaded.users : initialSeed.users;
       store.employees = loaded.employees?.length ? loaded.employees : initialSeed.employees;
+      store.schedules = loaded.schedules?.length ? loaded.schedules : initialSeed.schedules;
     } else {
       savePersistedStoreSync();
     }

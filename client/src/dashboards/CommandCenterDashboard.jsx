@@ -17,16 +17,30 @@ import {
   Eye,
   Sliders,
   Compass,
-  FileText
+  FileText,
+  UserPlus,
+  Megaphone,
+  Cake,
+  ClipboardList,
+  ShieldAlert,
+  Network,
+  Activity,
+  Calendar,
+  CalendarCheck,
+  XCircle
 } from 'lucide-react';
 import { api } from '../lib/api';
 import SupervisorLiveMap from '../components/maps/SupervisorLiveMap';
 import Customer360Modal from '../components/customers/Customer360Modal';
 import OrderApprovalModal from '../components/sales/OrderApprovalModal';
 import CompanyOnboardingWizard from '../components/admin/CompanyOnboardingWizard';
+import HRDashboard from './HRDashboard';
+import IdleReviewModal from '../components/hr/IdleReviewModal';
+import { formatDate } from '../lib/formatters';
 
-
-export default function CommandCenterDashboard({ user, onNavigate }) {
+export default function CommandCenterDashboard({ user, onNavigate, initialView = 'operations' }) {
+  const [viewMode, setViewMode] = useState(initialView || 'operations'); // 'operations' | 'hr'
+  const [hrSubTab, setHrSubTab] = useState('overview');
   const [loading, setLoading] = useState(true);
   const [dateFilter, setDateFilter] = useState('today');
   const [regionFilter, setRegionFilter] = useState('all');
@@ -46,6 +60,14 @@ export default function CommandCenterDashboard({ user, onNavigate }) {
   const [orders, setOrders] = useState([]);
   const [insights, setInsights] = useState([]);
 
+  // HR Intelligence Data (for Executive overview)
+  const [hrStats, setHrStats] = useState(null);
+  const [sosEvents, setSosEvents] = useState([]);
+  const [pendingLeaves, setPendingLeaves] = useState([]);
+  const [idleAlerts, setIdleAlerts] = useState([]);
+  const [activeIdleAlert, setActiveIdleAlert] = useState(null);
+  const [statusMsg, setStatusMsg] = useState('');
+
   // Modals
   const [selectedCustomerId, setSelectedCustomerId] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -62,10 +84,13 @@ export default function CommandCenterDashboard({ user, onNavigate }) {
   const loadCommandCenterData = async () => {
     setLoading(true);
     try {
-      const [supRes, ordersRes, alertsRes] = await Promise.all([
-        api.get('/field/supervisor/metrics'),
-        api.get('/sales/orders'),
-        api.get('/field/supervisor/alerts')
+      const [supRes, ordersRes, alertsRes, hrDashRes, hrSosRes, hrLeaveRes] = await Promise.all([
+        api.get('/field/supervisor/metrics').catch(() => ({})),
+        api.get('/sales/orders').catch(() => []),
+        api.get('/field/supervisor/alerts').catch(() => []),
+        api.get('/hr/dashboard').catch(() => null),
+        api.get('/hr/sos').catch(() => []),
+        api.get('/hr/leave').catch(() => [])
       ]);
 
       const supData = supRes?.data || supRes || {};
@@ -75,6 +100,17 @@ export default function CommandCenterDashboard({ user, onNavigate }) {
       setStores(supData.stores || []);
       setAlerts(alertList);
       setOrders(orderList);
+
+      // HR Overview stats
+      if (hrDashRes) setHrStats(hrDashRes);
+      if (Array.isArray(hrSosRes)) setSosEvents(hrSosRes);
+      if (hrLeaveRes) {
+        const lvList = Array.isArray(hrLeaveRes) ? hrLeaveRes : (hrLeaveRes?.requests || hrLeaveRes?.data || []);
+        setPendingLeaves(lvList.filter(l => (l.status || '').toLowerCase() === 'pending'));
+      }
+      if (hrDashRes?.idle_records) {
+        setIdleAlerts(hrDashRes.idle_records || []);
+      }
 
       // Compute dynamic team members list for the map & leaderboard
       const teamList = (supData.team || []).map(m => ({
@@ -145,6 +181,12 @@ export default function CommandCenterDashboard({ user, onNavigate }) {
           text: `${alertList.filter(a => a.status === 'active' || a.status === 'OPEN').length} active exception flags detected (geofence deviations and missing checkouts requiring supervisor review).`
         });
       }
+      if (hrSosRes.filter(s => s.status === 'active').length > 0) {
+        autoInsights.push({
+          type: 'sos',
+          text: `🚨 EMERGENCY: ${hrSosRes.filter(s => s.status === 'active').length} active Field SOS panic beacon(s) active right now.`
+        });
+      }
       autoInsights.push({
         type: 'workforce',
         text: `Workforce field compliance is monitored live. ${teamList.filter(t => t.status_color === 'GREEN').length} agents currently active.`
@@ -155,6 +197,38 @@ export default function CommandCenterDashboard({ user, onNavigate }) {
       console.error('Failed to load command center data:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Handle SOS emergency resolution
+  const handleResolveSOS = async (id) => {
+    try {
+      await api.put(`/hr/sos/${id}/resolve`, { resolution_notes: 'CEO Executive Review - Verified safe & dispatch completed.' });
+      setStatusMsg('✓ SOS Emergency Beacon resolved & stopped.');
+      loadCommandCenterData();
+    } catch (err) {
+      setStatusMsg(`SOS resolution error: ${err.message}`);
+    }
+  };
+
+  // Handle Leave approval from Executive quick pulse
+  const handleApproveLeave = async (id) => {
+    try {
+      await api.put(`/hr/leave/${id}/approve`, {});
+      setStatusMsg('✓ Leave request approved & balances adjusted.');
+      loadCommandCenterData();
+    } catch (err) {
+      setStatusMsg(`Approval error: ${err.message}`);
+    }
+  };
+
+  const handleRejectLeave = async (id) => {
+    try {
+      await api.put(`/hr/leave/${id}/reject`, { reason: 'Executive operational requirements' });
+      setStatusMsg('✓ Leave request rejected.');
+      loadCommandCenterData();
+    } catch (err) {
+      setStatusMsg(`Rejection error: ${err.message}`);
     }
   };
 
@@ -169,26 +243,79 @@ export default function CommandCenterDashboard({ user, onNavigate }) {
         <div>
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20">
-              Enterprise Command & Control
+              Enterprise Command & Strategic Governance
+            </span>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
+              CEO Master Control
             </span>
           </div>
           <h1 className="text-2xl lg:text-3xl font-black text-zinc-900 dark:text-zinc-100 mt-1">
-            {getGreeting()}, {user?.full_name || 'Commander'}
+            {getGreeting()}, {user?.full_name || 'Chief Executive Officer'}
           </h1>
           <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-            {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} &bull; Africa/Lagos (GMT+1)
+            {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} &bull; Africa/Lagos (GMT+1) &bull; Full Executive & Workforce Authority
           </p>
         </div>
 
-        {/* Global Action Triggers */}
+        {/* Global Action Triggers (CEO & HR Capabilities) */}
         <div className="flex flex-wrap items-center gap-2">
+          {/* HR Action 1: Register Staff */}
+          <button
+            onClick={() => {
+              setViewMode('hr');
+              setHrSubTab('people');
+            }}
+            className="px-3 py-2 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition"
+            title="Register new staff member & generate login credentials"
+          >
+            <UserPlus size={14} /> <span>Register Staff</span>
+          </button>
+
+          {/* HR Action 2: Post Announcement */}
+          <button
+            onClick={() => {
+              setViewMode('hr');
+              setHrSubTab('announcements');
+            }}
+            className="px-3 py-2 border border-orange-500/30 text-orange-600 dark:text-orange-400 hover:bg-orange-500/10 rounded-xl text-xs font-bold flex items-center gap-1.5 transition"
+            title="Broadcast official company announcement"
+          >
+            <Megaphone size={14} /> <span>Announcement</span>
+          </button>
+
+          {/* HR Action 3: Set Birthday */}
+          <button
+            onClick={() => {
+              setViewMode('hr');
+              setHrSubTab('birthdays');
+            }}
+            className="px-3 py-2 border border-pink-500/30 text-pink-600 dark:text-pink-400 hover:bg-pink-500/10 rounded-xl text-xs font-bold flex items-center gap-1.5 transition"
+            title="Manage staff birthdays & celebratory broadcasts"
+          >
+            <Cake size={14} /> <span>Birthdays</span>
+          </button>
+
+          {/* HR Action 4: Assign Task */}
+          <button
+            onClick={() => {
+              setViewMode('hr');
+              setHrSubTab('tasks');
+            }}
+            className="px-3 py-2 border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-xl text-xs font-bold flex items-center gap-1.5 transition"
+            title="Dispatch strategic directives and tasks"
+          >
+            <ClipboardList size={14} /> <span>Assign Task</span>
+          </button>
+
+          {/* POS Commercial Order */}
           <button
             onClick={() => onNavigate && onNavigate('sales')}
-            className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition"
+            className="px-3.5 py-2 bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-zinc-200 text-white dark:text-zinc-900 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition"
           >
             <ShoppingCart size={14} /> + New Order (POS)
           </button>
 
+          {/* Refresh */}
           <button
             onClick={loadCommandCenterData}
             disabled={loading}
@@ -199,6 +326,107 @@ export default function CommandCenterDashboard({ user, onNavigate }) {
           </button>
         </div>
       </div>
+
+      {statusMsg && (
+        <div className="p-3 rounded-xl bg-orange-500/10 border border-orange-500/30 text-orange-700 dark:text-orange-300 text-xs font-semibold flex items-center justify-between animate-in fade-in">
+          <span>{statusMsg}</span>
+          <button onClick={() => setStatusMsg('')} className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200">×</button>
+        </div>
+      )}
+
+      {/* 2. Top-Level Executive View Switcher: Operations vs HR Intelligence */}
+      <div className="flex items-center gap-2 p-1.5 bg-zinc-100 dark:bg-zinc-800/80 rounded-2xl border border-zinc-200 dark:border-zinc-700/60">
+        <button
+          onClick={() => setViewMode('operations')}
+          className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-black transition flex items-center justify-center gap-2 ${
+            viewMode === 'operations'
+              ? 'bg-white dark:bg-zinc-900 text-orange-600 dark:text-orange-400 shadow-sm'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
+          }`}
+        >
+          <Compass size={16} />
+          <span>Executive Operations & Fleet Radar</span>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400 font-bold">
+            Revenue & Field Live
+          </span>
+        </button>
+
+        <button
+          onClick={() => setViewMode('hr')}
+          className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-black transition flex items-center justify-center gap-2 ${
+            viewMode === 'hr'
+              ? 'bg-white dark:bg-zinc-900 text-orange-600 dark:text-orange-400 shadow-sm'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
+          }`}
+        >
+          <Users size={16} />
+          <span>Workforce Intelligence & HR Command</span>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold">
+            All 11 HR Modules & Governance
+          </span>
+        </button>
+      </div>
+
+      {/* RENDER VIEW MODE: WORKFORCE INTELLIGENCE & HR SUITE */}
+      {viewMode === 'hr' && (
+        <div className="space-y-4 animate-in fade-in duration-200">
+          <HRDashboard user={user} initialTab={hrSubTab} />
+        </div>
+      )}
+
+      {/* RENDER VIEW MODE: EXECUTIVE OPERATIONS & REVENUE COCKPIT */}
+      {viewMode === 'operations' && (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          
+          {/* Critical Emergency SOS Callout Banner (if active SOS exists) */}
+          {activeSosList.map((sos) => (
+            <div
+              key={sos.id}
+              className="p-4 rounded-2xl bg-gradient-to-r from-red-600 via-rose-600 to-red-700 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 border-2 border-red-400 animate-pulse"
+            >
+              <div className="flex items-start gap-3">
+                <div className="p-2.5 rounded-xl bg-white/20 text-white shrink-0">
+                  <ShieldAlert size={24} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-white text-red-700 tracking-wider">
+                      CRITICAL FIELD EMERGENCY
+                    </span>
+                    <span className="text-[11px] opacity-80 font-mono">
+                      {formatDate(sos.created_at)}
+                    </span>
+                  </div>
+                  <h4 className="text-sm font-black mt-1">
+                    {sos.agent?.first_name || 'Field Agent'} {sos.agent?.last_name || ''}: {sos.message}
+                  </h4>
+                  <p className="text-xs opacity-90 mt-0.5">
+                    Coordinates: {sos.latitude?.toFixed(5)}, {sos.longitude?.toFixed(5)} (±{Math.round(sos.accuracy || 0)}m)
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <a
+                  href={`https://maps.google.com/?q=${sos.latitude},${sos.longitude}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-3 py-2 rounded-lg bg-white/20 hover:bg-white/30 text-white text-xs font-bold transition flex items-center gap-1.5"
+                >
+                  <MapPin size={13} />
+                  <span>Live Coordinates</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => handleResolveSOS(sos.id)}
+                  className="px-4 py-2 rounded-lg bg-white text-red-700 hover:bg-emerald-50 hover:text-emerald-700 text-xs font-black shadow-lg transition flex items-center gap-1.5"
+                >
+                  <CheckCircle2 size={15} className="text-emerald-600" />
+                  <span>Stop SOS Beacon & Mark Safe</span>
+                </button>
+              </div>
+            </div>
+          ))}
 
       {/* 2. Contextual Filters Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-xs">
@@ -450,6 +678,105 @@ export default function CommandCenterDashboard({ user, onNavigate }) {
         </div>
       </div>
 
+      {/* Integrated Executive HR Governance & Workforce Directives */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Pending Leave Requests Approvals */}
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 shadow-xs space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-black text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+              <Calendar size={16} className="text-orange-500" /> Pending Leave Approvals ({pendingLeaves.length})
+            </h3>
+            <button
+              onClick={() => {
+                setViewMode('hr');
+                setHrSubTab('leave');
+              }}
+              className="text-xs font-bold text-orange-600 dark:text-orange-400 hover:underline flex items-center gap-1"
+            >
+              Leave Center &rarr;
+            </button>
+          </div>
+
+          <div className="space-y-2.5">
+            {pendingLeaves.slice(0, 3).map((lv) => (
+              <div key={lv.id} className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 flex items-center justify-between text-xs border border-zinc-200 dark:border-zinc-700/60">
+                <div>
+                  <b className="text-zinc-900 dark:text-zinc-100">
+                    {lv.employee?.first_name} {lv.employee?.last_name}
+                  </b>
+                  <div className="text-[10px] text-zinc-400">
+                    {lv.leave_type} • {lv.days} days ({formatDate(lv.start_date)} → {formatDate(lv.end_date)})
+                  </div>
+                </div>
+                <div className="flex gap-1.5">
+                  <button
+                    onClick={() => handleApproveLeave(lv.id)}
+                    className="text-xs py-1 px-2.5 bg-emerald-500 text-white rounded-lg font-bold hover:bg-emerald-600 transition"
+                  >
+                    Approve
+                  </button>
+                  <button
+                    onClick={() => handleRejectLeave(lv.id)}
+                    className="text-xs py-1 px-2.5 text-rose-500 border border-rose-200 dark:border-rose-900/50 rounded-lg font-bold hover:bg-rose-500/10 transition"
+                  >
+                    Reject
+                  </button>
+                </div>
+              </div>
+            ))}
+            {pendingLeaves.length === 0 && (
+              <div className="p-4 text-center text-xs text-zinc-400">No pending leave requests requiring CEO review.</div>
+            )}
+          </div>
+        </div>
+
+        {/* Inactivity Telemetry Alerts */}
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 shadow-xs space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-black text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+              <Activity size={16} className="text-orange-500" /> Workstation Inactivity Telemetry ({idleAlerts.length})
+            </h3>
+            <button
+              onClick={() => {
+                setViewMode('hr');
+                setHrSubTab('overview');
+              }}
+              className="text-xs font-bold text-orange-600 dark:text-orange-400 hover:underline flex items-center gap-1"
+            >
+              Workforce Audit &rarr;
+            </button>
+          </div>
+
+          <div className="space-y-2.5">
+            {idleAlerts.slice(0, 3).map((alert) => (
+              <div
+                key={alert.id}
+                onClick={() => setActiveIdleAlert(alert)}
+                className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 flex items-center justify-between text-xs cursor-pointer hover:border-orange-500/50 border border-zinc-200 dark:border-zinc-700/60 transition"
+              >
+                <div>
+                  <b className="text-zinc-900 dark:text-zinc-100">
+                    {alert.employee?.first_name} {alert.employee?.last_name}
+                  </b>
+                  <div className="text-[10px] text-zinc-400">
+                    Reason: {alert.reason || 'Break'} • Duration: {Math.round(alert.duration_seconds / 60)} mins
+                  </div>
+                </div>
+                <button className="text-xs font-bold text-orange-500 hover:underline">
+                  Review Alert
+                </button>
+              </div>
+            ))}
+            {idleAlerts.length === 0 && (
+              <div className="p-4 text-center text-xs text-zinc-400">No active inactivity exceptions detected.</div>
+            )}
+          </div>
+        </div>
+      </div>
+
+    </div>
+  )}
+
       {/* Customer 360 Modal */}
       {selectedCustomerId && (
         <Customer360Modal
@@ -475,6 +802,19 @@ export default function CommandCenterDashboard({ user, onNavigate }) {
           isOpen={true}
           onClose={() => setOnboardingOpen(false)}
           onSuccess={loadCommandCenterData}
+        />
+      )}
+
+      {/* Idle Review Modal */}
+      {activeIdleAlert && (
+        <IdleReviewModal
+          alert={activeIdleAlert}
+          isOpen={true}
+          onClose={() => setActiveIdleAlert(null)}
+          onSuccess={() => {
+            setActiveIdleAlert(null);
+            loadCommandCenterData();
+          }}
         />
       )}
     </div>

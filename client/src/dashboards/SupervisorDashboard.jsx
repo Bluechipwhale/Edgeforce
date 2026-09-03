@@ -2,16 +2,16 @@ import React, { useState, useEffect } from 'react';
 import {
   Users, UserCheck, UserX, Clock, AlertTriangle, MapPin, Store,
   CheckCircle2, ShieldAlert, FileText, Download, Filter, Search,
-  Eye, RefreshCw, ChevronRight, X, Phone, Calendar, ArrowUpRight,
+  Eye, RefreshCw, ChevronRight, X, Phone, Calendar, CalendarCheck, ArrowUpRight,
   Sparkles, Layers, ShieldCheck, Activity, Award, ShoppingCart,
   Building2
 } from 'lucide-react';
 import SupervisorLiveMap from '../components/maps/SupervisorLiveMap';
+import SupervisorScheduleReview from '../components/schedule/SupervisorScheduleReview';
 import { apiRequest } from '../utils/api';
 import { formatDistance } from '../lib/formatters';
 
-
-export default function SupervisorDashboard({ user }) {
+export default function SupervisorDashboard({ user, initialTab = 'radar' }) {
   const [metrics, setMetrics] = useState({
     total_field_force: 0,
     total_field_agents: 0,
@@ -39,6 +39,13 @@ export default function SupervisorDashboard({ user }) {
   const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL' | 'ACTIVE' | 'LATE' | 'ALERT' | 'COMPLETED'
   const [territoryFilter, setTerritoryFilter] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
+  const [mainTab, setMainTab] = useState(initialTab === 'schedules' ? 'schedules' : 'radar');
+
+  useEffect(() => {
+    if (initialTab) {
+      setMainTab(initialTab === 'schedules' ? 'schedules' : 'radar');
+    }
+  }, [initialTab]);
 
   // Selected Employee Profile Drawer State
   const [selectedEmployee, setSelectedEmployee] = useState(null);
@@ -228,6 +235,19 @@ export default function SupervisorDashboard({ user }) {
         <div className="flex flex-wrap items-center gap-2.5">
           <button
             type="button"
+            onClick={() => setMainTab(mainTab === 'schedules' ? 'radar' : 'schedules')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 ${
+              mainTab === 'schedules'
+                ? 'bg-orange-500 text-white'
+                : 'bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-700'
+            }`}
+          >
+            <CalendarCheck className="w-4 h-4" />
+            Team Daily Schedules
+          </button>
+
+          <button
+            type="button"
             onClick={() => setIsStoreRequestModalOpen(true)}
             className="px-3.5 py-2 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 border border-zinc-300 dark:border-zinc-700 rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-1.5"
           >
@@ -255,8 +275,41 @@ export default function SupervisorDashboard({ user }) {
         </div>
       </div>
 
-      {/* KPI Stats Counter Grid (10 Requirement Cards) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+      {/* Navigation Sub-Tabs */}
+      <div className="flex gap-2 border-b border-zinc-200 dark:border-zinc-800 pb-2 overflow-x-auto text-xs font-bold">
+        <button
+          type="button"
+          onClick={() => setMainTab('radar')}
+          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-colors whitespace-nowrap ${
+            mainTab === 'radar'
+              ? 'bg-orange-500 text-white shadow-sm'
+              : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+          }`}
+        >
+          <MapPin size={14} />
+          <span>Workforce 360 Radar & Live Map</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setMainTab('schedules')}
+          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-colors whitespace-nowrap ${
+            mainTab === 'schedules'
+              ? 'bg-orange-500 text-white shadow-sm'
+              : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+          }`}
+        >
+          <CalendarCheck size={14} />
+          <span>Team Daily Schedules & Route Reviews</span>
+        </button>
+      </div>
+
+      {mainTab === 'schedules' ? (
+        <SupervisorScheduleReview user={user} />
+      ) : (
+        <>
+          {/* KPI Stats Counter Grid (10 Requirement Cards) */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
         {/* Card 1: Total Field Force */}
         <div className="surface-card p-3.5 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
           <div className="flex items-center justify-between text-zinc-500 text-xs font-semibold mb-1">
@@ -843,6 +896,8 @@ export default function SupervisorDashboard({ user }) {
           </div>
         </div>
       )}
+      </>
+    )}
 
       {/* Store Request Review Modal */}
       {isStoreRequestModalOpen && (

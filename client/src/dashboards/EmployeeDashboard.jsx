@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Clock,
   Calendar,
+  CalendarCheck,
   FileText,
   ClipboardList,
   Target,
@@ -26,6 +27,7 @@ import { DailyReminderPrompt } from '../components/tasks/DailyReminderPrompt';
 import GeoLocationReportView from '../components/field/GeoLocationReportView';
 import EmployeeProfileView from '../components/employee/EmployeeProfileView';
 import PublicStaffDirectoryView from '../components/employee/PublicStaffDirectoryView';
+import DailyScheduleView from '../components/schedule/DailyScheduleView';
 import { formatMoney, formatDate, formatTime } from '../lib/formatters';
 import { getCurrentGPSLocation } from '../lib/geo';
 import { api } from '../lib/api';
@@ -48,6 +50,7 @@ export default function EmployeeDashboard({ user, initialTab = 'dashboard' }) {
   const [okrs, setOkrs] = useState([]);
   const [announcementsList, setAnnouncementsList] = useState([]);
   const [birthdaysList, setBirthdaysList] = useState([]);
+  const [todaySchedule, setTodaySchedule] = useState(null);
 
   // Modals
   const [leaveModalOpen, setLeaveModalOpen] = useState(false);
@@ -60,7 +63,7 @@ export default function EmployeeDashboard({ user, initialTab = 'dashboard' }) {
 
   const loadData = async () => {
     try {
-      const [dash, att, bal, reqs, pay, tList, oList, ann, bdays] = await Promise.all([
+      const [dash, att, bal, reqs, pay, tList, oList, ann, bdays, sched] = await Promise.all([
         api.get('/employee/dashboard').catch(() => null),
         api.get('/employee/attendance').catch(() => []),
         api.get('/employee/leave/balances').catch(() => null),
@@ -69,7 +72,8 @@ export default function EmployeeDashboard({ user, initialTab = 'dashboard' }) {
         api.get('/employee/tasks').catch(() => []),
         api.get('/employee/okrs').catch(() => []),
         api.get('/employee/announcements').catch(() => ({ data: [] })),
-        api.get('/employee/birthdays').catch(() => ({ data: [] }))
+        api.get('/employee/birthdays').catch(() => ({ data: [] })),
+        api.get('/employee/schedule/today').catch(() => null)
       ]);
 
       setDashboardData(dash);
@@ -81,6 +85,7 @@ export default function EmployeeDashboard({ user, initialTab = 'dashboard' }) {
       setOkrs(oList || []);
       setAnnouncementsList(Array.isArray(ann) ? ann : (ann?.data || ann?.announcements || []));
       setBirthdaysList(Array.isArray(bdays) ? bdays : (bdays?.data || bdays?.birthdays || []));
+      setTodaySchedule(sched?.data || sched || null);
     } catch {
       // Graceful offline fallback
     }
@@ -183,6 +188,7 @@ export default function EmployeeDashboard({ user, initialTab = 'dashboard' }) {
       <div className="flex gap-1.5 overflow-x-auto pb-1 border-b border-zinc-200 dark:border-zinc-800">
         {[
           ['dashboard', 'Dashboard'],
+          ['schedule', 'Daily Schedule & Planner'],
           ['profile', 'My Staff Profile'],
           ['directory', 'Staff Directory'],
           ['attendance', 'Timesheet & Attendance'],
@@ -214,6 +220,53 @@ export default function EmployeeDashboard({ user, initialTab = 'dashboard' }) {
             onOpenTaskModal={() => setTaskModalOpen(true)}
             onTaskCreated={loadData}
           />
+
+          {/* Today's Schedule Card */}
+          <div className={`p-4 rounded-2xl border transition ${
+            todaySchedule?.supervisor_status === 'APPROVED'
+              ? 'bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent border-emerald-500/30'
+              : todaySchedule
+              ? 'bg-gradient-to-r from-orange-500/10 via-amber-500/5 to-transparent border-orange-500/30'
+              : 'surface-card border-zinc-200 dark:border-zinc-800'
+          }`}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-orange-500 text-white flex items-center justify-center shrink-0 shadow-sm">
+                  <CalendarCheck size={20} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-extrabold text-sm text-zinc-900 dark:text-zinc-100">
+                      {todaySchedule ? todaySchedule.title : "Today's Work Schedule & Itinerary"}
+                    </span>
+                    {todaySchedule && (
+                      <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${
+                        todaySchedule.supervisor_status === 'APPROVED'
+                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                          : 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20'
+                      }`}>
+                        {todaySchedule.supervisor_status === 'APPROVED' ? 'Approved ✅' : todaySchedule.supervisor_status || 'Submitted'}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                    {todaySchedule
+                      ? `${todaySchedule.shift_start} - ${todaySchedule.shift_end} (${todaySchedule.total_planned_hours || 8}h) • ${(todaySchedule.tasks || []).length} scheduled tasks • ${todaySchedule.work_location || 'Assigned Territory'}`
+                      : 'You haven\'t planned your work schedule for today yet. Submit your itinerary to your supervisor and HR.'}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setTab('schedule')}
+                className="btn-primary py-2 px-4 text-xs font-bold shrink-0 self-start sm:self-center flex items-center gap-1.5 bg-gradient-to-r from-orange-500 to-amber-600 text-white rounded-xl shadow-sm"
+              >
+                <span>{todaySchedule ? 'View & Update Schedule' : 'Plan Today\'s Schedule'}</span>
+                <ArrowRight size={14} />
+              </button>
+            </div>
+          </div>
 
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
@@ -613,6 +666,11 @@ export default function EmployeeDashboard({ user, initialTab = 'dashboard' }) {
       {/* TAB 7: GEO-LOCATION REPORT */}
       {tab === 'geolocation' && (
         <GeoLocationReportView user={user} defaultRoleFilter="ALL" />
+      )}
+
+      {/* TAB: DAILY WORKFORCE SCHEDULE & PLANNER */}
+      {(tab === 'schedule' || tab === 'schedules') && (
+        <DailyScheduleView user={user} onNavigate={setTab} />
       )}
 
       {/* TAB 8: STAFF & COLLEAGUE DIRECTORY */}

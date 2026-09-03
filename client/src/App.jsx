@@ -133,6 +133,7 @@ export default function App() {
     // Other Operational Agents (Sales Agents, Promoters, Brand Ambassadors)
     if (isAgent) {
       const allowedAgentTabs = [
+        'schedule',
         'manifest',
         'customer_360',
         'customers',
@@ -154,6 +155,8 @@ export default function App() {
       }
 
       switch (currentTab) {
+        case 'schedule':
+          return <EmployeeDashboard user={user} initialTab="schedule" />;
         case 'manifest':
           return <FieldDashboard user={user} initialTab="manifest" onSelectTab={setCurrentTab} />;
         case 'customer_360':
@@ -170,7 +173,7 @@ export default function App() {
         case 'alerts':
           return <AlertCenterDashboard user={user} />;
         case 'safety':
-        case 'sos':
+          case 'sos':
           return <AgentSOSView user={user} />;
         case 'tasks':
         case 'queue':
@@ -198,6 +201,8 @@ export default function App() {
         return <ReportsCenterDashboard user={user} />;
       case 'supervisor_dashboard':
         return <SupervisorDashboard user={user} />;
+      case 'team_schedules':
+        return <SupervisorDashboard user={user} initialTab="schedules" />;
       case 'sales':
       case 'orders':
       case 'catalog':
@@ -223,7 +228,16 @@ export default function App() {
       case 'leave':
       case 'idle':
       case 'org':
-        return <HRDashboard user={user} initialTab={currentTab === 'staff' ? 'people' : currentTab} />;
+      case 'organization':
+      case 'announcements':
+      case 'birthdays':
+      case 'locations':
+        return <HRDashboard user={user} initialTab={currentTab === 'staff' ? 'people' : currentTab === 'org' ? 'organization' : currentTab} />;
+      case 'hr_schedules':
+        return <HRDashboard user={user} initialTab="schedules" />;
+      case 'schedule':
+      case 'schedules':
+        return <EmployeeDashboard user={user} initialTab="schedule" />;
       case 'staff_directory':
         return <EmployeeDashboard user={user} initialTab="directory" />;
       case 'profile':

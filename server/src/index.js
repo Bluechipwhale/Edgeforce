@@ -29,6 +29,7 @@ import deliveryRoutes from './routes/deliveryRoutes.js';
 import customerRoutes from './routes/customerRoutes.js';
 import taskRoutes from './routes/taskRoutes.js';
 import locationRoutes from './routes/locationRoutes.js';
+import scheduleRoutes from './routes/scheduleRoutes.js';
 import { requireAuth } from './middleware/auth.js';
 import { employeeService } from './services/employeeService.js';
 import { reminderWorker } from './services/reminderWorker.js';
@@ -115,6 +116,7 @@ app.use('/api/customers', customerRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/work-locations', locationRoutes);
+app.use('/api/schedules', scheduleRoutes);
 
 
 // Compatibility route for idle telemetry
