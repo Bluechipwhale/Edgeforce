@@ -219,7 +219,7 @@ export default function App() {
       case 'payroll':
         return <AccountingDashboard user={user} />;
       case 'executive':
-        return <ExecutiveDashboard user={user} />;
+        return <ExecutiveDashboard user={user} onNavigate={setCurrentTab} />;
       case 'it_admin':
         return <ITAdminDashboard user={user} onSelectTab={setCurrentTab} />;
       case 'overview':

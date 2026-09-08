@@ -176,12 +176,47 @@ export default function TopHeader({
                 </div>
               </div>
 
+              {/* Fast Demo Role Switcher */}
+              <div className="py-2 border-b border-zinc-200 dark:border-zinc-800 space-y-1">
+                <div className="px-2 text-[9px] font-black uppercase tracking-wider text-orange-500">
+                  Switch Workspace Role
+                </div>
+                <div className="grid grid-cols-2 gap-1 text-[10px]">
+                  {[
+                    { label: '👑 CEO', email: 'ceo@edgewforce.com' },
+                    { label: '⚡ IT Admin', email: 'it@edgewforce.com' },
+                    { label: '👔 HR Manager', email: 'hr@edgewforce.com' },
+                    { label: '🎯 Sales', email: 'sales@edgewforce.com' },
+                    { label: '📍 Field Agent', email: 'field@edgewforce.com' },
+                    { label: '🛡️ Supervisor', email: 'supervisor@edgewforce.com' },
+                    { label: '💳 Accountant', email: 'accountant@edgewforce.com' },
+                    { label: '🏢 Ops Staff', email: 'staff@edgewforce.com' },
+                  ].map((r) => (
+                    <button
+                      key={r.email}
+                      onClick={async () => {
+                        try {
+                          const res = await api.post('/auth/login', { identifier: r.email, password: 'ChangeMe123!' });
+                          localStorage.setItem('ewf_token', res.token);
+                          window.location.reload();
+                        } catch {
+                          // Ignore
+                        }
+                      }}
+                      className="px-2 py-1 rounded text-left font-bold hover:bg-orange-500/10 hover:text-orange-500 text-zinc-600 dark:text-zinc-300 transition truncate"
+                    >
+                      {r.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <button
                 onClick={() => {
                   setProfileOpen(false);
                   onLogout();
                 }}
-                className="w-full flex items-center gap-2 p-2 rounded-lg text-xs font-semibold text-rose-600 hover:bg-rose-500/10 transition"
+                className="w-full flex items-center gap-2 p-2 rounded-lg text-xs font-semibold text-rose-600 hover:bg-rose-500/10 transition mt-1"
               >
                 <LogOut size={14} />
                 Sign Out

@@ -20,6 +20,7 @@ import {
   Boxes,
   Bell,
   User,
+  Award,
   LogOut
 } from 'lucide-react';
 
@@ -62,6 +63,7 @@ export default function Sidebar({ user, currentTab, onSelectTab, onLogout, isMob
         title: 'Core Operations',
         items: [
           { id: 'command_center', label: 'Executive Command Center', icon: LayoutDashboard },
+          { id: 'executive', label: 'CEO Strategic Governance', icon: Award },
           { id: 'supervisor_dashboard', label: 'Workforce 360 & Live Radar', icon: MapPin },
           { id: 'team_schedules', label: 'Team Daily Schedules', icon: CalendarCheck },
           { id: 'customers', label: 'Customer 360 Directory', icon: Building2 },
