@@ -16,13 +16,24 @@ client/dist/
 **/.env
 **/.env.*
 *.local
+!*.example
+!**/*.example
+!.env.example
+!.env.production.example
 
 # Ephemeral File Uploads & Local JSON Stores
 uploads/
 server/uploads/
-data/
-server/data/
+server/data/store.json
+server/data/*.json
+/data/
 **/store.json
+
+# Ensure source data directories are tracked
+!client/src/data/
+!client/src/data/**
+!server/src/data/
+!server/src/data/**
 
 # Logs & Runtime
 *.log
