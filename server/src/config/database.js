@@ -6,15 +6,21 @@
 import 'dotenv/config';
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import { fileURLToPath } from 'url';
 import bcrypt from 'bcryptjs';
 import { logger } from '../utils/logger.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dataDir = path.resolve(__dirname, '../../data');
+const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.LAMBDA_TASK_ROOT);
+const dataDir = isServerless ? path.join(os.tmpdir(), 'edgewforce-data') : path.resolve(__dirname, '../../data');
 const storePath = path.join(dataDir, 'store.json');
 
-fs.mkdirSync(dataDir, { recursive: true });
+try {
+  fs.mkdirSync(dataDir, { recursive: true });
+} catch {
+  // Gracefully ignore filesystem errors in read-only serverless runtimes
+}
 
 export let supabase = null;
 

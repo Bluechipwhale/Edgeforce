@@ -11,6 +11,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 import { fileURLToPath } from 'url';
 
 import authRoutes from './routes/authRoutes.js';
@@ -37,8 +38,14 @@ import { staffImportService } from './services/staffImportService.js';
 import { logger } from './utils/logger.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const uploadDir = path.resolve(__dirname, '../uploads');
-fs.mkdirSync(uploadDir, { recursive: true });
+const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.LAMBDA_TASK_ROOT);
+const uploadDir = isServerless ? path.join(os.tmpdir(), 'edgewforce-uploads') : path.resolve(__dirname, '../uploads');
+
+try {
+  fs.mkdirSync(uploadDir, { recursive: true });
+} catch {
+  // Gracefully ignore filesystem errors on read-only environments
+}
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
