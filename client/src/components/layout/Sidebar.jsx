@@ -85,20 +85,19 @@ export default function Sidebar({ user, currentTab, onSelectTab, onLogout, isMob
       }
     ];
   } else if (isAgent) {
-    // STRICT AGENT MENU: 8 Primary items + Schedule
+    // STRICT AGENT MENU: 8 Primary Field Force modules
     navSections = [
       {
-        title: 'Agent Operations',
+        title: 'Field Operations',
         items: [
-          { id: 'schedule', label: 'My Daily Schedule', icon: CalendarCheck },
           { id: 'manifest', label: 'Field Routes & Geofencing', icon: MapPin },
           { id: 'customer_360', label: 'Customer 360', icon: Building2 },
-          { id: 'customers', label: 'Directory', icon: Users },
-          { id: 'delivery', label: 'Fleet', icon: Truck },
+          { id: 'directory', label: 'Directory', icon: Users },
+          { id: 'fleet', label: 'Fleet', icon: Truck },
           { id: 'payments', label: 'Proof of Payment', icon: WalletCards },
           { id: 'alerts', label: 'Alert & Red Flag Center', icon: AlertTriangle },
           { id: 'safety', label: 'Emergency SOS', icon: ShieldAlert },
-          { id: 'tasks', label: 'Queue', icon: ClipboardCheck }
+          { id: 'queue', label: 'Queue', icon: ClipboardCheck }
         ]
       }
     ];

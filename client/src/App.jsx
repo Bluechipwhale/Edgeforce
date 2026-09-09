@@ -125,62 +125,9 @@ export default function App() {
     const role = user?.role_code;
     const isAgent = ['FIELD_AGENT', 'SALES_AGENT', 'BRAND_AMBASSADOR', 'PROMOTER'].includes(role);
 
-    // Field Agent: Full access to the brand new 8-module Field Force Interface
-    if (role === 'FIELD_AGENT') {
-      return <FieldDashboard user={user} initialTab={currentTab} onSelectTab={setCurrentTab} />;
-    }
-
-    // Other Operational Agents (Sales Agents, Promoters, Brand Ambassadors)
+    // Field Force & Operational Agents: Full access to the new 8-module Field Interface
     if (isAgent) {
-      const allowedAgentTabs = [
-        'schedule',
-        'manifest',
-        'customer_360',
-        'customers',
-        'directory',
-        'delivery',
-        'fleet',
-        'payments',
-        'settlement',
-        'collections',
-        'alerts',
-        'safety',
-        'sos',
-        'tasks',
-        'queue'
-      ];
-
-      if (!allowedAgentTabs.includes(currentTab)) {
-        return <FieldDashboard user={user} initialTab="manifest" onSelectTab={setCurrentTab} />;
-      }
-
-      switch (currentTab) {
-        case 'schedule':
-          return <EmployeeDashboard user={user} initialTab="schedule" />;
-        case 'manifest':
-          return <FieldDashboard user={user} initialTab="manifest" onSelectTab={setCurrentTab} />;
-        case 'customer_360':
-        case 'customers':
-        case 'directory':
-          return <CustomerDirectoryDashboard user={user} />;
-        case 'delivery':
-        case 'fleet':
-          return <DeliveryDashboard user={user} />;
-        case 'payments':
-        case 'settlement':
-        case 'collections':
-          return <SalesDashboard user={user} initialTab="settlement" />;
-        case 'alerts':
-          return <AlertCenterDashboard user={user} />;
-        case 'safety':
-          case 'sos':
-          return <AgentSOSView user={user} />;
-        case 'tasks':
-        case 'queue':
-          return <EmployeeDashboard user={user} initialTab="tasks" />;
-        default:
-          return <FieldDashboard user={user} initialTab="manifest" onSelectTab={setCurrentTab} />;
-      }
+      return <FieldDashboard user={user} initialTab={currentTab} onSelectTab={setCurrentTab} />;
     }
 
     // Standard Non-Agent Workspaces (Management, HR, Staff, Supervisor)
