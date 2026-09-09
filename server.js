@@ -3,4 +3,4 @@
 // Directs Hostinger Node.js Application Manager to the server entrypoint
 // ==============================================================================
 
-import './server/src/index.js';
+export {default} from './server/src/index.js';
