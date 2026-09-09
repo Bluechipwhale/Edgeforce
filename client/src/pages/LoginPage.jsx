@@ -237,58 +237,6 @@ export default function LoginPage({ onLogin, onNavigatePublic }) {
             </button>
           </form>
 
-          {/* 1-Click Fast Demo Login Switcher */}
-          <div className="pt-4 border-t border-zinc-900 space-y-2.5">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-orange-400 flex items-center gap-1">
-                <Sparkles size={12} />
-                <span>1-Click Fast Access / Demo Roles</span>
-              </span>
-              <span className="text-[9px] text-zinc-500 font-mono">Password: ChangeMe123!</span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 text-left">
-              {[
-                { label: '👑 CEO & Executive', email: 'ceo@edgewforce.com', desc: 'Strategic Governance' },
-                { label: '⚡ IT Super Admin', email: 'it@edgewforce.com', desc: 'System & Credentials' },
-                { label: '👔 HR Manager', email: 'hr@edgewforce.com', desc: 'People & Rosters' },
-                { label: '🎯 Sales Lead', email: 'sales@edgewforce.com', desc: 'Commercial & POS' },
-                { label: '📍 Field Agent', email: 'field@edgewforce.com', desc: 'Routes & Geofencing' },
-                { label: '🛡️ Supervisor', email: 'supervisor@edgewforce.com', desc: 'Radar & 360 Team' },
-                { label: '💳 Accountant', email: 'accountant@edgewforce.com', desc: 'Collections & Ledger' },
-                { label: '🏢 Ops Staff', email: 'staff@edgewforce.com', desc: 'Self-Service & Schedule' },
-              ].map((role) => (
-                <button
-                  key={role.email}
-                  type="button"
-                  onClick={async () => {
-                    setIdentifier(role.email);
-                    setPassword('ChangeMe123!');
-                    setError('');
-                    setSuccessMsg('');
-                    setLoading(true);
-                    try {
-                      const res = await api.post('/auth/login', { identifier: role.email, password: 'ChangeMe123!' });
-                      localStorage.setItem('ewf_token', res.token);
-                      onLogin?.(res.user);
-                    } catch (err) {
-                      setError(err.message || 'Login failed.');
-                    } finally {
-                      setLoading(false);
-                    }
-                  }}
-                  className="p-2 rounded-xl bg-zinc-900/90 hover:bg-orange-500/10 border border-zinc-800 hover:border-orange-500/40 text-zinc-300 hover:text-white transition group flex flex-col justify-between"
-                >
-                  <span className="text-xs font-bold text-zinc-200 group-hover:text-orange-400 transition truncate block">
-                    {role.label}
-                  </span>
-                  <span className="text-[9px] text-zinc-500 truncate block">
-                    {role.desc}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
 
           <div className="pt-3 border-t border-zinc-900 flex flex-col sm:flex-row items-center justify-between text-xs text-zinc-500 gap-2">
             <span>Corporate Access Only</span>
