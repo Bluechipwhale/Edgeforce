@@ -25,9 +25,24 @@ import AgentSOSView from './components/field/AgentSOSView';
 import { api } from './lib/api';
 
 export default function App() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [currentTab, setCurrentTab] = useState('dashboard');
+  const [user, setUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('ewf_user');
+      const token = localStorage.getItem('ewf_token');
+      return (saved && token) ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [loading, setLoading] = useState(() => {
+    const token = localStorage.getItem('ewf_token');
+    const saved = localStorage.getItem('ewf_user');
+    // If cached session exists, render immediately without blocking full screen
+    return Boolean(token && !saved);
+  });
+  const [currentTab, setCurrentTab] = useState(() => {
+    return localStorage.getItem('ewf_current_tab') || 'dashboard';
+  });
   const [dark, setDark] = useState(() => {
     const saved = localStorage.getItem('ewf_theme');
     return saved ? saved === 'dark' : true;
@@ -72,35 +87,76 @@ export default function App() {
     return 'dashboard';
   };
 
-  // Load user session on mount
+  const handleSelectTab = (tab) => {
+    setCurrentTab(tab);
+    if (tab) {
+      localStorage.setItem('ewf_current_tab', tab);
+    }
+  };
+
+  // Load user session on mount and listen to unauthorized events
   useEffect(() => {
+    const handleUnauthorized = () => {
+      localStorage.removeItem('ewf_token');
+      localStorage.removeItem('ewf_user');
+      setUser(null);
+    };
+    window.addEventListener('ewf_unauthorized', handleUnauthorized);
+
     const token = localStorage.getItem('ewf_token');
     if (token) {
       api.get('/auth/me')
         .then((res) => {
-          setUser(res.user);
-          setCurrentTab(getDefaultTabForUser(res.user));
+          // Handle unwrapped user object, res.user, or res.data safely
+          const userData = (res && (res.id || res.role_code || res.email)) ? res : (res?.user || res?.data || null);
+          if (userData && (userData.id || userData.email)) {
+            setUser(userData);
+            localStorage.setItem('ewf_user', JSON.stringify(userData));
+            setCurrentTab((prevTab) => {
+              const savedTab = localStorage.getItem('ewf_current_tab');
+              if (savedTab && savedTab !== 'dashboard') return savedTab;
+              return (prevTab && prevTab !== 'dashboard') ? prevTab : getDefaultTabForUser(userData);
+            });
+          } else {
+            localStorage.removeItem('ewf_token');
+            localStorage.removeItem('ewf_user');
+            setUser(null);
+          }
         })
-        .catch(() => {
-          localStorage.removeItem('ewf_token');
-          setUser(null);
+        .catch((err) => {
+          if (err?.status === 401 || err?.code === 'TOKEN_EXPIRED' || err?.code === 'USER_INACTIVE' || err?.code === 'INVALID_TOKEN') {
+            localStorage.removeItem('ewf_token');
+            localStorage.removeItem('ewf_user');
+            setUser(null);
+          }
         })
         .finally(() => setLoading(false));
     } else {
+      localStorage.removeItem('ewf_user');
+      setUser(null);
       setLoading(false);
     }
+
+    return () => window.removeEventListener('ewf_unauthorized', handleUnauthorized);
   }, []);
 
   const handleLoginSuccess = (userData) => {
     setUser(userData);
-    setCurrentTab(getDefaultTabForUser(userData));
-    if (userData.requires_password_change) {
+    if (userData) {
+      localStorage.setItem('ewf_user', JSON.stringify(userData));
+    }
+    const defaultTab = getDefaultTabForUser(userData);
+    setCurrentTab(defaultTab);
+    localStorage.setItem('ewf_current_tab', defaultTab);
+    if (userData?.requires_password_change) {
       setMustChangePassword(true);
     }
   };
 
   const handleLogout = () => {
     localStorage.removeItem('ewf_token');
+    localStorage.removeItem('ewf_user');
+    localStorage.removeItem('ewf_current_tab');
     setUser(null);
   };
 
@@ -133,7 +189,7 @@ export default function App() {
     // Standard Non-Agent Workspaces (Management, HR, Staff, Supervisor)
     switch (currentTab) {
       case 'command_center':
-        return <CommandCenterDashboard user={user} onNavigate={setCurrentTab} />;
+        return <CommandCenterDashboard user={user} onNavigate={handleSelectTab} />;
       case 'customers':
       case 'directory':
         return <CustomerDirectoryDashboard user={user} />;
@@ -166,9 +222,9 @@ export default function App() {
       case 'payroll':
         return <AccountingDashboard user={user} />;
       case 'executive':
-        return <ExecutiveDashboard user={user} onNavigate={setCurrentTab} />;
+        return <ExecutiveDashboard user={user} onNavigate={handleSelectTab} />;
       case 'it_admin':
-        return <ITAdminDashboard user={user} onSelectTab={setCurrentTab} />;
+        return <ITAdminDashboard user={user} onSelectTab={handleSelectTab} />;
       case 'overview':
       case 'people':
       case 'staff':
@@ -205,7 +261,7 @@ export default function App() {
         onToggleTheme={handleToggleTheme}
         onLogout={handleLogout}
         currentTab={currentTab}
-        onSelectTab={setCurrentTab}
+        onSelectTab={handleSelectTab}
       >
         <GlobalAlertBanner />
         {renderDashboard()}

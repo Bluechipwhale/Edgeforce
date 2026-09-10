@@ -24,10 +24,11 @@ try {
 
 export let supabase = null;
 
+const isTestMode = process.env.NODE_ENV === 'test' || Boolean(process.env.TEST_MODE) || process.execArgv.includes('--test') || process.argv.some(a => a.includes('test'));
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || process.env.SUPABASE_ANON_KEY;
 
 // Dynamically initialize Supabase if credentials are provided and not in test runner
-if (process.env.NODE_ENV !== 'test' && !process.env.TEST_MODE && process.env.SUPABASE_URL && supabaseKey) {
+if (!isTestMode && process.env.SUPABASE_URL && supabaseKey) {
   try {
     const { createClient } = await import('@supabase/supabase-js');
     supabase = createClient(process.env.SUPABASE_URL, supabaseKey, {
@@ -442,7 +443,7 @@ export const db = {
   async find(table, filter = {}, options = {}) {
     const canonicalTable = resolveCanonicalTable(table);
 
-    if (supabase && process.env.NODE_ENV !== 'test') {
+    if (supabase && !isTestMode) {
       try {
         let q = supabase.from(canonicalTable).select(options.select || '*');
         for (const [k, v] of Object.entries(filter)) {

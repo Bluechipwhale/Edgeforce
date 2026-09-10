@@ -32,8 +32,15 @@ export default function LoginPage({ onLogin, onNavigatePublic }) {
     setSuccessMsg('');
     try {
       const res = await api.post('/auth/login', { identifier, password });
-      localStorage.setItem('ewf_token', res.token);
-      onLogin?.(res.user);
+      const token = res.token || res.data?.token;
+      const userData = res.user || res.data?.user || (res.id ? res : res.data);
+      if (token) {
+        localStorage.setItem('ewf_token', token);
+      }
+      if (userData) {
+        localStorage.setItem('ewf_user', JSON.stringify(userData));
+      }
+      onLogin?.(userData);
     } catch (err) {
       setError(err.message || 'Invalid login credentials. Please verify your email/phone and password.');
     } finally {
