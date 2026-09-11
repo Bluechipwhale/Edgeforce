@@ -9,6 +9,68 @@ import { recordAudit } from '../middleware/auditLogger.js';
 import { emailService } from './emailService.js';
 import { normalizePhone, isEmail, normalizeEmail } from '../utils/phoneNormalizer.js';
 
+export async function findUserByIdentifier(identifier) {
+  if (!identifier) return null;
+  const trimmedInput = String(identifier).trim();
+  let user = null;
+
+  if (isEmail(trimmedInput)) {
+    const normalizedEmail = normalizeEmail(trimmedInput);
+    user = await db.findOne('users', { email: normalizedEmail });
+    if (!user && (normalizedEmail === 'itadmin@edgewforce.com' || normalizedEmail === 'it-admin@edgewforce.com')) {
+      user = await db.findOne('users', { email: 'it@edgewforce.com' }) || await db.findOne('users', { email: 'admin@edgewforce.com' });
+    }
+    if (!user) {
+      const employees = await db.find('employees');
+      const emp = employees.find(e => 
+        (e.work_email && normalizeEmail(e.work_email) === normalizedEmail) ||
+        (e.personal_email && normalizeEmail(e.personal_email) === normalizedEmail) ||
+        (e.email && normalizeEmail(e.email) === normalizedEmail)
+      );
+      if (emp?.user_id) {
+        user = await db.findById('users', emp.user_id);
+      }
+    }
+  }
+
+  if (!user) {
+    const normalizedPhone = normalizePhone(trimmedInput);
+    if (normalizedPhone) {
+      user = await db.findOne('users', { phone: normalizedPhone });
+      if (!user) {
+        const employees = await db.find('employees');
+        const emp = employees.find(e => normalizePhone(e.phone) === normalizedPhone);
+        if (emp?.user_id) {
+          user = await db.findById('users', emp.user_id);
+        }
+      }
+    }
+  }
+
+  // Fallback: Support login via Staff ID / Employee Code (e.g. EMP-1001, EMP-003, 003)
+  if (!user) {
+    const employees = await db.find('employees');
+    const cleanInput = trimmedInput.toUpperCase();
+    const numOnly = cleanInput.replace(/[^0-9]/g, '');
+    const emp = employees.find(e => {
+      const empCode = (e.employee_code || '').toUpperCase();
+      const staffId = String(e.staff_id || '').toUpperCase();
+      const empNum = empCode.replace(/[^0-9]/g, '');
+      return (
+        empCode === cleanInput ||
+        staffId === cleanInput ||
+        (numOnly && empNum === numOnly) ||
+        (numOnly && staffId === numOnly)
+      );
+    });
+    if (emp?.user_id) {
+      user = await db.findById('users', emp.user_id);
+    }
+  }
+
+  return user;
+}
+
 export const authService = {
   /**
    * Logs in an enterprise user via Email or Phone number.
@@ -18,59 +80,7 @@ export const authService = {
       throw new Error('Please enter your email address or phone number, and your password.');
     }
 
-    const trimmedInput = String(identifier).trim();
-    let user = null;
-
-    if (isEmail(trimmedInput)) {
-      const normalizedEmail = normalizeEmail(trimmedInput);
-      user = await db.findOne('users', { email: normalizedEmail });
-      if (!user && (normalizedEmail === 'itadmin@edgewforce.com' || normalizedEmail === 'it-admin@edgewforce.com')) {
-        user = await db.findOne('users', { email: 'it@edgewforce.com' }) || await db.findOne('users', { email: 'admin@edgewforce.com' });
-      }
-      if (!user) {
-        const employees = await db.find('employees');
-        const emp = employees.find(e => 
-          (e.work_email && normalizeEmail(e.work_email) === normalizedEmail) ||
-          (e.personal_email && normalizeEmail(e.personal_email) === normalizedEmail)
-        );
-        if (emp?.user_id) {
-          user = await db.findById('users', emp.user_id);
-        }
-      }
-    } else {
-      const normalizedPhone = normalizePhone(trimmedInput);
-      if (normalizedPhone) {
-        user = await db.findOne('users', { phone: normalizedPhone });
-        if (!user) {
-          const employees = await db.find('employees');
-          const emp = employees.find(e => normalizePhone(e.phone) === normalizedPhone);
-          if (emp?.user_id) {
-            user = await db.findById('users', emp.user_id);
-          }
-        }
-      }
-    }
-
-    // Fallback: Support login via Staff ID / Employee Code (e.g. EMP-1001, EMP-003, 003)
-    if (!user) {
-      const employees = await db.find('employees');
-      const cleanInput = trimmedInput.toUpperCase();
-      const numOnly = cleanInput.replace(/[^0-9]/g, '');
-      const emp = employees.find(e => {
-        const empCode = (e.employee_code || '').toUpperCase();
-        const staffId = String(e.staff_id || '').toUpperCase();
-        const empNum = empCode.replace(/[^0-9]/g, '');
-        return (
-          empCode === cleanInput ||
-          staffId === cleanInput ||
-          (numOnly && empNum === numOnly) ||
-          (numOnly && staffId === numOnly)
-        );
-      });
-      if (emp?.user_id) {
-        user = await db.findById('users', emp.user_id);
-      }
-    }
+    const user = await findUserByIdentifier(identifier);
 
     if (!user) {
       throw new Error('Invalid login credentials.');
@@ -247,52 +257,35 @@ export const authService = {
   },
 
   /**
-   * Generates a password reset PIN/token for an employee using Email or Phone.
+   * Generates a password reset PIN/token for an employee using Email, Phone, or Staff ID.
    */
   async forgotPassword(identifier, req = null) {
-    if (!identifier) throw new Error('Please provide your registered email address or phone number.');
-    const trimmed = String(identifier).trim();
-    let user = null;
-
-    if (isEmail(trimmed)) {
-      const normalizedEmail = normalizeEmail(trimmed);
-      user = await db.findOne('users', { email: normalizedEmail });
-    } else {
-      const normalizedPhone = normalizePhone(trimmed);
-      if (normalizedPhone) {
-        user = await db.findOne('users', { phone: normalizedPhone });
-        if (!user) {
-          const emp = await db.findOne('employees', { phone: normalizedPhone });
-          if (emp?.user_id) user = await db.findById('users', emp.user_id);
-        }
-      }
-    }
-
-    if (!user) {
-      // Avoid enumeration while providing standard response
-      return {
-        success: true,
-        message: `If an account with ${identifier} exists, password reset instructions and security token have been generated.`
-      };
-    }
+    if (!identifier) throw new Error('Please provide your registered email address, phone number, or Staff ID.');
+    const user = await findUserByIdentifier(identifier);
 
     // Generate 6-digit secure numeric reset token
     const resetToken = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour validity
 
-    await db.update('users', user.id, {
-      reset_token: resetToken,
-      reset_token_expires_at: expiresAt
-    });
-
-    await recordAudit(user, 'PASSWORD_RESET_REQUESTED', 'users', user.id, { identifier }, req);
-
-    let emailDelivered = false;
-    if (user.email) {
-      const emailResult = await emailService.sendPasswordResetEmail(user.email, resetToken, user.full_name || 'Staff Member');
-      emailDelivered = emailResult.delivered;
+    if (user) {
+      await db.update('users', user.id, {
+        reset_token: resetToken,
+        reset_token_expires_at: expiresAt
+      });
+      await recordAudit(user, 'PASSWORD_RESET_REQUESTED', 'users', user.id, { identifier }, req).catch(() => {});
     }
 
+    let emailDelivered = false;
+    if (user?.email) {
+      try {
+        const emailResult = await emailService.sendPasswordResetEmail(user.email, resetToken, user.full_name || 'Staff Member');
+        emailDelivered = emailResult.delivered;
+      } catch {
+        emailDelivered = false;
+      }
+    }
+
+    const targetIdentifier = user ? (user.email || user.phone || identifier) : identifier;
     const msg = emailDelivered
       ? `A 6-digit password reset code has been sent to ${user.email}. Please check your inbox.`
       : `Password reset verification code generated: ${resetToken}`;
@@ -301,44 +294,29 @@ export const authService = {
       success: true,
       message: msg,
       reset_token: resetToken,
-      identifier: user.email || user.phone,
+      identifier: targetIdentifier,
       email_sent: emailDelivered
     };
   },
 
   /**
-   * Resets password using verification token and Email/Phone identifier.
+   * Resets password using verification token and Email/Phone/Staff ID identifier.
    */
   async resetPassword(identifier, token, newPassword, req = null) {
     if (!identifier || !token || !newPassword) {
-      throw new Error('Identifier (email or phone), verification code, and new password are required.');
+      throw new Error('Identifier (email, phone, or staff ID), verification code, and new password are required.');
     }
     if (newPassword.length < 8) {
       throw new Error('New password must be at least 8 characters long.');
     }
 
-    const trimmed = String(identifier).trim();
-    let user = null;
-
-    if (isEmail(trimmed)) {
-      const normalizedEmail = normalizeEmail(trimmed);
-      user = await db.findOne('users', { email: normalizedEmail });
-    } else {
-      const normalizedPhone = normalizePhone(trimmed);
-      if (normalizedPhone) {
-        user = await db.findOne('users', { phone: normalizedPhone });
-        if (!user) {
-          const emp = await db.findOne('employees', { phone: normalizedPhone });
-          if (emp?.user_id) user = await db.findById('users', emp.user_id);
-        }
-      }
-    }
+    const user = await findUserByIdentifier(identifier);
 
     if (!user) {
-      throw new Error('Invalid email, phone number, or verification code.');
+      throw new Error('Invalid email, phone number, staff ID, or verification code.');
     }
 
-    if (!user.reset_token || user.reset_token !== token.trim()) {
+    if (!user.reset_token || String(user.reset_token).trim() !== String(token).trim()) {
       throw new Error('Invalid verification code. Please check and try again.');
     }
 
@@ -354,7 +332,7 @@ export const authService = {
       requires_password_change: false
     });
 
-    await recordAudit(user, 'PASSWORD_RESET_COMPLETED', 'users', user.id, { identifier }, req);
+    await recordAudit(user, 'PASSWORD_RESET_COMPLETED', 'users', user.id, { identifier }, req).catch(() => {});
 
     return {
       success: true,

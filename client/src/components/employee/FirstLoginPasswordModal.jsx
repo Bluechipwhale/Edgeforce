@@ -4,8 +4,9 @@ import { api } from '../../lib/api';
 
 export default function FirstLoginPasswordModal({
   user,
-  isOpen,
-  onPasswordChanged
+  isOpen = true,
+  onPasswordChanged,
+  onSuccess
 }) {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -41,11 +42,13 @@ export default function FirstLoginPasswordModal({
         current_password: currentPassword,
         new_password: newPassword
       });
-      onPasswordChanged?.({
+      const updatedUser = {
         ...user,
         requires_password_change: false,
         onboarding_status: 'Password Changed'
-      });
+      };
+      onPasswordChanged?.(updatedUser);
+      onSuccess?.(updatedUser);
     } catch (err) {
       setError(err.message || 'Failed to update password. Please verify your current temporary password.');
     } finally {

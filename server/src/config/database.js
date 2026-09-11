@@ -533,10 +533,11 @@ export const db = {
       if (normalized.clock_out_lng && !normalized.clock_out_longitude) normalized.clock_out_longitude = normalized.clock_out_lng;
     }
 
-    if (supabase) {
+    let supabaseRecord = null;
+    if (supabase && !isTestMode) {
       try {
         const { data, error } = await supabase.from(canonicalTable).insert(normalized).select().single();
-        if (!error && data) return data;
+        if (!error && data) supabaseRecord = data;
       } catch (err) {
         logger.warn(`Supabase insert for ${canonicalTable} failed, using local store: ${err.message}`);
       }
@@ -545,8 +546,9 @@ export const db = {
     if (!store[canonicalTable]) store[canonicalTable] = [];
     const maxId = store[canonicalTable].reduce((max, r) => Math.max(max, Number(r.id) || 0), 0);
     const newRecord = {
-      id: record.id || maxId + 1,
-      created_at: new Date().toISOString(),
+      ...(supabaseRecord || {}),
+      id: supabaseRecord?.id || record.id || maxId + 1,
+      created_at: supabaseRecord?.created_at || new Date().toISOString(),
       ...normalized
     };
 
@@ -570,31 +572,36 @@ export const db = {
       if (normalized.clock_out_lng && !normalized.clock_out_longitude) normalized.clock_out_longitude = normalized.clock_out_lng;
     }
 
-    if (supabase) {
+    let supabaseRecord = null;
+    if (supabase && !isTestMode) {
       try {
         const { data, error } = await supabase.from(canonicalTable).update(normalized).eq('id', id).select().single();
-        if (!error && data) return data;
+        if (!error && data) supabaseRecord = data;
       } catch (err) {
-        logger.warn(`Supabase update for ${canonicalTable} failed, using local store: ${err.message}`);
+        logger.warn(`Supabase update for ${canonicalTable} failed: ${err.message}`);
       }
     }
 
     const targetTable = store[canonicalTable] ? canonicalTable : table;
     if (!store[targetTable]) store[targetTable] = [];
     const index = store[targetTable].findIndex(r => String(r.id) === String(id));
-    if (index === -1) {
-      // If not found in primary store, try fallback
-      return null;
+    if (index !== -1) {
+      store[targetTable][index] = {
+        ...store[targetTable][index],
+        ...normalized,
+        updated_at: new Date().toISOString()
+      };
+      savePersistedStore();
+      return JSON.parse(JSON.stringify(store[targetTable][index]));
     }
 
-    store[targetTable][index] = {
-      ...store[targetTable][index],
-      ...normalized,
-      updated_at: new Date().toISOString()
-    };
+    if (supabaseRecord) {
+      store[targetTable].push(supabaseRecord);
+      savePersistedStore();
+      return supabaseRecord;
+    }
 
-    savePersistedStore();
-    return JSON.parse(JSON.stringify(store[targetTable][index]));
+    return null;
   },
 
   async delete(table, id) {

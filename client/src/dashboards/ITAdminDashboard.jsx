@@ -1032,6 +1032,33 @@ export default function ITAdminDashboard({ user, onSelectTab }) {
               />
             </div>
 
+            <div className="md:col-span-2 p-3 rounded-xl bg-orange-500/5 border border-orange-500/20">
+              <label className="block text-xs font-bold text-zinc-800 dark:text-zinc-200 mb-1 flex items-center justify-between">
+                <span className="flex items-center gap-1.5 text-orange-600 dark:text-orange-400">
+                  <Lock size={13} />
+                  <span>Account Login Password</span>
+                </span>
+                <span className="text-[10px] text-zinc-500 font-normal">Leave blank for default: ChangeMe123!</span>
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Set custom password (min. 6 chars) or leave blank for ChangeMe123!"
+                  className="form-input pr-10 font-mono text-xs"
+                  value={registerForm.password}
+                  onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+              </div>
+            </div>
+
             <div>
               <label className="block text-xs font-bold text-zinc-800 dark:text-zinc-200 mb-1">
                 Department *

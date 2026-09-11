@@ -271,9 +271,18 @@ export default function App() {
       {mustChangePassword && (
         <FirstLoginPasswordModal
           user={user}
+          isOpen={mustChangePassword}
+          onPasswordChanged={(updatedUser) => {
+            setMustChangePassword(false);
+            const nextUser = updatedUser || { ...user, requires_password_change: false };
+            setUser(nextUser);
+            localStorage.setItem('ewf_user', JSON.stringify(nextUser));
+          }}
           onSuccess={() => {
             setMustChangePassword(false);
-            setUser(prev => ({ ...prev, requires_password_change: false }));
+            const nextUser = { ...user, requires_password_change: false };
+            setUser(nextUser);
+            localStorage.setItem('ewf_user', JSON.stringify(nextUser));
           }}
         />
       )}

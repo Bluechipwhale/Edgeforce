@@ -51,7 +51,7 @@ export default function LoginPage({ onLogin, onNavigatePublic }) {
   const handleRequestResetToken = async (e) => {
     e?.preventDefault();
     if (!forgotIdentifier) {
-      setForgotError('Please enter your registered email address or phone number.');
+      setForgotError('Please enter your registered email address, phone number, or Staff ID.');
       return;
     }
 
@@ -60,10 +60,11 @@ export default function LoginPage({ onLogin, onNavigatePublic }) {
     setForgotSuccess('');
     try {
       const res = await api.post('/auth/forgot-password', { identifier: forgotIdentifier });
-      setForgotSuccess(res.message || 'Verification code generated.');
-      if (res.reset_token) {
-        setResetToken(res.reset_token);
+      const resetCode = res.reset_token || res.data?.reset_token;
+      if (resetCode) {
+        setResetToken(resetCode);
       }
+      setForgotSuccess(res.message || (resetCode ? `Verification code generated: ${resetCode}` : 'Verification code processed.'));
       setForgotStep(2);
     } catch (err) {
       setForgotError(err.message || 'Failed to process password reset request.');
@@ -95,7 +96,7 @@ export default function LoginPage({ onLogin, onNavigatePublic }) {
         token: resetToken,
         new_password: newPassword
       });
-      setSuccessMsg(res.message || 'Password reset successfully. Please sign in.');
+      setSuccessMsg(res.message || 'Password reset successfully! Please sign in with your new password.');
       setIdentifier(forgotIdentifier);
       setPassword(newPassword);
       setForgotModalOpen(false);
@@ -293,12 +294,12 @@ export default function LoginPage({ onLogin, onNavigatePublic }) {
             {forgotStep === 1 ? (
               <form onSubmit={handleRequestResetToken} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-zinc-300 mb-1">Email address or phone number</label>
+                  <label className="block text-xs font-bold text-zinc-300 mb-1">Corporate Email, Phone, or Staff ID</label>
                   <input
                     type="text"
                     required
                     className="form-input bg-zinc-900 border-zinc-800 text-white text-xs py-2.5"
-                    placeholder="e.g. name@company.com or 08012345678"
+                    placeholder="e.g. name@company.com, 08012345678, or EMP-1001"
                     value={forgotIdentifier}
                     onChange={(e) => setForgotIdentifier(e.target.value)}
                   />
