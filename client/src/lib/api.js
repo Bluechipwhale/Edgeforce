@@ -6,9 +6,23 @@ import { cacheApiResponse, getCachedApiResponse, enqueueOfflineAction } from './
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
+function getAuthToken() {
+  const directToken = localStorage.getItem('ewf_token') || sessionStorage.getItem('ewf_token') || localStorage.getItem('token');
+  if (directToken) return directToken;
+  try {
+    const rawSb = localStorage.getItem('ewf_supabase_auth');
+    if (rawSb) {
+      const parsed = JSON.parse(rawSb);
+      const token = parsed?.access_token || parsed?.currentSession?.access_token;
+      if (token) return token;
+    }
+  } catch {}
+  return null;
+}
+
 export async function request(path, options = {}) {
   const method = options.method || 'GET';
-  const token = localStorage.getItem('ewf_token') || sessionStorage.getItem('ewf_token') || localStorage.getItem('token');
+  const token = getAuthToken();
   const isFormData = options.body instanceof FormData;
 
   const headers = {

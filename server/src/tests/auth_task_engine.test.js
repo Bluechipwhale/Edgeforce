@@ -37,23 +37,31 @@ describe('1. Nigerian Phone Normalization & Email Identifier Tests', () => {
 });
 
 describe('2. Flexible Email or Phone Registration & Authentication Tests', () => {
+  const ts = Date.now();
+  const emailA = `amaka.emailonly.${ts}@testcorp.com`;
+  const rawPhoneB = `0819999${Math.floor(1000 + Math.random() * 9000)}`;
+  const normalizedPhoneB = normalizePhone(rawPhoneB);
+  const emailC = `tunde.both.${ts}@testcorp.com`;
+  const rawPhoneC = `0701122${Math.floor(1000 + Math.random() * 9000)}`;
+  const normalizedPhoneC = normalizePhone(rawPhoneC);
+
   it('Account Type A: should register and login with Email Only (Phone = NULL)', async () => {
     const regRes = await authService.registerEmployee({
       full_name: 'Amaka EmailOnly',
-      email: 'amaka.emailonly@testcorp.com',
+      email: emailA,
       password: 'SecurePassword123!',
       phone: null,
       role_code: 'EMPLOYEE'
     });
 
     assert.ok(regRes.user);
-    assert.strictEqual(regRes.user.email, 'amaka.emailonly@testcorp.com');
+    assert.strictEqual(regRes.user.email, emailA);
     assert.strictEqual(regRes.user.phone, null);
 
     // Login with email
-    const loginRes = await authService.login('amaka.emailonly@testcorp.com', 'SecurePassword123!');
+    const loginRes = await authService.login(emailA, 'SecurePassword123!');
     assert.ok(loginRes.token);
-    assert.strictEqual(loginRes.user.email, 'amaka.emailonly@testcorp.com');
+    assert.strictEqual(loginRes.user.email, emailA);
   });
 
   it('Account Type B: should register and login with Phone Only (Email = NULL)', async () => {
@@ -61,43 +69,43 @@ describe('2. Flexible Email or Phone Registration & Authentication Tests', () =>
       full_name: 'Emeka PhoneOnly',
       email: null,
       password: 'SecurePassword123!',
-      phone: '08199991111',
+      phone: rawPhoneB,
       role_code: 'EMPLOYEE'
     });
 
     assert.ok(regRes.user);
     assert.strictEqual(regRes.user.email, null);
-    assert.strictEqual(regRes.user.phone, '+2348199991111');
+    assert.strictEqual(regRes.user.phone, normalizedPhoneB);
 
-    // Login using 081... local format
-    const loginLocal = await authService.login('08199991111', 'SecurePassword123!');
+    // Login using local format
+    const loginLocal = await authService.login(rawPhoneB, 'SecurePassword123!');
     assert.ok(loginLocal.token);
-    assert.strictEqual(loginLocal.user.phone, '+2348199991111');
+    assert.strictEqual(loginLocal.user.phone, normalizedPhoneB);
 
-    // Login using +234... international format
-    const loginIntl = await authService.login('+2348199991111', 'SecurePassword123!');
+    // Login using international format
+    const loginIntl = await authService.login(normalizedPhoneB, 'SecurePassword123!');
     assert.ok(loginIntl.token);
   });
 
   it('Account Type C: should register with Email + Phone and login with either', async () => {
     const regRes = await authService.registerEmployee({
       full_name: 'Tunde BothCredentials',
-      email: 'tunde.both@testcorp.com',
+      email: emailC,
       password: 'SecurePassword123!',
-      phone: '07011223344',
+      phone: rawPhoneC,
       role_code: 'EMPLOYEE'
     });
 
     assert.ok(regRes.user);
-    assert.strictEqual(regRes.user.email, 'tunde.both@testcorp.com');
-    assert.strictEqual(regRes.user.phone, '+2347011223344');
+    assert.strictEqual(regRes.user.email, emailC);
+    assert.strictEqual(regRes.user.phone, normalizedPhoneC);
 
     // Login with email
-    const byEmail = await authService.login('tunde.both@testcorp.com', 'SecurePassword123!');
+    const byEmail = await authService.login(emailC, 'SecurePassword123!');
     assert.ok(byEmail.token);
 
     // Login with phone
-    const byPhone = await authService.login('07011223344', 'SecurePassword123!');
+    const byPhone = await authService.login(rawPhoneC, 'SecurePassword123!');
     assert.ok(byPhone.token);
   });
 
@@ -120,8 +128,8 @@ describe('2. Flexible Email or Phone Registration & Authentication Tests', () =>
       async () => {
         await authService.registerEmployee({
           full_name: 'Duplicate Email User',
-          email: 'tunde.both@testcorp.com',
-          phone: '08155555555',
+          email: emailC,
+          phone: `0815555${Math.floor(1000 + Math.random() * 9000)}`,
           password: 'Password123!'
         });
       },
@@ -132,8 +140,8 @@ describe('2. Flexible Email or Phone Registration & Authentication Tests', () =>
       async () => {
         await authService.registerEmployee({
           full_name: 'Duplicate Phone User',
-          email: 'unique.diff@testcorp.com',
-          phone: '07011223344',
+          email: `unique.diff.${Date.now()}@testcorp.com`,
+          phone: rawPhoneC,
           password: 'Password123!'
         });
       },
@@ -143,25 +151,25 @@ describe('2. Flexible Email or Phone Registration & Authentication Tests', () =>
 
   it('should handle Password Reset using Email or Phone identifier', async () => {
     // Reset via Email
-    const forgotEmailRes = await authService.forgotPassword('amaka.emailonly@testcorp.com');
+    const forgotEmailRes = await authService.forgotPassword(emailA);
     assert.ok(forgotEmailRes.reset_token);
     assert.strictEqual(forgotEmailRes.reset_token.length, 6);
 
-    const resetEmailRes = await authService.resetPassword('amaka.emailonly@testcorp.com', forgotEmailRes.reset_token, 'NewSecurePassword123!');
+    const resetEmailRes = await authService.resetPassword(emailA, forgotEmailRes.reset_token, 'NewSecurePassword123!');
     assert.strictEqual(resetEmailRes.success, true);
 
     // Verify login with new password
-    const newLogin = await authService.login('amaka.emailonly@testcorp.com', 'NewSecurePassword123!');
+    const newLogin = await authService.login(emailA, 'NewSecurePassword123!');
     assert.ok(newLogin.token);
 
     // Reset via Phone
-    const forgotPhoneRes = await authService.forgotPassword('08199991111');
+    const forgotPhoneRes = await authService.forgotPassword(rawPhoneB);
     assert.ok(forgotPhoneRes.reset_token);
 
-    const resetPhoneRes = await authService.resetPassword('08199991111', forgotPhoneRes.reset_token, 'BrandNewPhonePassword123!');
+    const resetPhoneRes = await authService.resetPassword(rawPhoneB, forgotPhoneRes.reset_token, 'BrandNewPhonePassword123!');
     assert.strictEqual(resetPhoneRes.success, true);
 
-    const phoneLogin = await authService.login('08199991111', 'BrandNewPhonePassword123!');
+    const phoneLogin = await authService.login(rawPhoneB, 'BrandNewPhonePassword123!');
     assert.ok(phoneLogin.token);
   });
 });

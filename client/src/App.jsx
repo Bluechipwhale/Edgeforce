@@ -23,19 +23,20 @@ import EmployeeProfileView from './components/employee/EmployeeProfileView';
 import AgentSOSView from './components/field/AgentSOSView';
 
 import { api } from './lib/api';
+import { supabase, getSupabaseSession, signOutSupabase } from './lib/supabase';
 
 export default function App() {
   const [user, setUser] = useState(() => {
     try {
       const saved = localStorage.getItem('ewf_user');
-      const token = localStorage.getItem('ewf_token');
+      const token = localStorage.getItem('ewf_token') || localStorage.getItem('ewf_supabase_auth');
       return (saved && token) ? JSON.parse(saved) : null;
     } catch {
       return null;
     }
   });
   const [loading, setLoading] = useState(() => {
-    const token = localStorage.getItem('ewf_token');
+    const token = localStorage.getItem('ewf_token') || localStorage.getItem('ewf_supabase_auth');
     const saved = localStorage.getItem('ewf_user');
     // If cached session exists, render immediately without blocking full screen
     return Boolean(token && !saved);
@@ -94,20 +95,27 @@ export default function App() {
     }
   };
 
-  // Load user session on mount and listen to unauthorized events
+  // Load user session on mount and listen to unauthorized & Supabase events
   useEffect(() => {
     const handleUnauthorized = () => {
-      localStorage.removeItem('ewf_token');
-      localStorage.removeItem('ewf_user');
+      signOutSupabase().catch(() => {});
       setUser(null);
     };
     window.addEventListener('ewf_unauthorized', handleUnauthorized);
 
-    const token = localStorage.getItem('ewf_token');
-    if (token) {
-      api.get('/auth/me')
-        .then((res) => {
-          // Handle unwrapped user object, res.user, or res.data safely
+    const checkSessionAndFetchMe = async () => {
+      try {
+        let token = localStorage.getItem('ewf_token');
+        if (!token && supabase) {
+          const sbSession = await getSupabaseSession();
+          if (sbSession?.access_token) {
+            token = sbSession.access_token;
+            localStorage.setItem('ewf_token', token);
+          }
+        }
+
+        if (token) {
+          const res = await api.get('/auth/me');
           const userData = (res && (res.id || res.role_code || res.email)) ? res : (res?.user || res?.data || null);
           if (userData && (userData.id || userData.email)) {
             setUser(userData);
@@ -118,23 +126,48 @@ export default function App() {
               return (prevTab && prevTab !== 'dashboard') ? prevTab : getDefaultTabForUser(userData);
             });
           } else {
-            localStorage.removeItem('ewf_token');
-            localStorage.removeItem('ewf_user');
+            signOutSupabase().catch(() => {});
             setUser(null);
           }
-        })
-        .catch((err) => {
-          if (err?.status === 401 || err?.code === 'TOKEN_EXPIRED' || err?.code === 'USER_INACTIVE' || err?.code === 'INVALID_TOKEN') {
-            localStorage.removeItem('ewf_token');
-            localStorage.removeItem('ewf_user');
-            setUser(null);
-          }
-        })
-        .finally(() => setLoading(false));
-    } else {
-      localStorage.removeItem('ewf_user');
-      setUser(null);
-      setLoading(false);
+        } else {
+          localStorage.removeItem('ewf_user');
+          setUser(null);
+        }
+      } catch (err) {
+        if (err?.status === 401 || err?.code === 'TOKEN_EXPIRED' || err?.code === 'USER_INACTIVE' || err?.code === 'INVALID_TOKEN') {
+          signOutSupabase().catch(() => {});
+          setUser(null);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkSessionAndFetchMe();
+
+    // Subscribe to Supabase Auth state changes
+    if (supabase) {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN' && session?.access_token) {
+          localStorage.setItem('ewf_token', session.access_token);
+          api.get('/auth/me')
+            .then((res) => {
+              const userData = (res && (res.id || res.role_code || res.email)) ? res : (res?.user || res?.data || null);
+              if (userData) {
+                setUser(userData);
+                localStorage.setItem('ewf_user', JSON.stringify(userData));
+              }
+            })
+            .catch(() => {});
+        } else if (event === 'SIGNED_OUT') {
+          signOutSupabase().catch(() => {});
+          setUser(null);
+        }
+      });
+      return () => {
+        subscription?.unsubscribe();
+        window.removeEventListener('ewf_unauthorized', handleUnauthorized);
+      };
     }
 
     return () => window.removeEventListener('ewf_unauthorized', handleUnauthorized);
@@ -153,10 +186,8 @@ export default function App() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('ewf_token');
-    localStorage.removeItem('ewf_user');
-    localStorage.removeItem('ewf_current_tab');
+  const handleLogout = async () => {
+    await signOutSupabase();
     setUser(null);
   };
 

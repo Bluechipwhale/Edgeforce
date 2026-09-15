@@ -4,11 +4,15 @@
 // ==============================================================================
 
 import bcrypt from 'bcryptjs';
-import { db } from '../config/database.js';
+import { db, supabase } from '../config/database.js';
+import { supabaseAuthService } from './supabaseAuthService.js';
 import { validateHierarchyAssignment } from '../middleware/rbac.js';
 import { recordAudit } from '../middleware/auditLogger.js';
 import { normalizePhone, normalizeEmail } from '../utils/phoneNormalizer.js';
 import { locationService } from './locationService.js';
+import { logger } from '../utils/logger.js';
+
+const isTestMode = process.env.NODE_ENV === 'test' || Boolean(process.env.TEST_MODE);
 
 
 export const hrService = {
@@ -616,7 +620,28 @@ export const hrService = {
       : 'ChangeMe123!';
     const passwordHash = bcrypt.hashSync(passwordToUse, 10);
 
+    let authUserId = null;
+
+    // 1. Provision Real Supabase Auth User (Admin API or Client API)
+    if (!isTestMode && normalizedEmail) {
+      try {
+        const sbResult = await supabaseAuthService.provisionUser({
+          email: normalizedEmail,
+          password: passwordToUse,
+          fullName: `${first_name} ${last_name}`,
+          roleCode: finalRole
+        });
+        if (sbResult?.authUserId) {
+          authUserId = sbResult.authUserId;
+        }
+      } catch (err) {
+        logger.warn(`Supabase HR account provisioning notice: ${err.message}`);
+      }
+    }
+
     const user = await db.insert('users', {
+      auth_user_id: authUserId,
+      uuid: authUserId || undefined,
       full_name: `${first_name} ${last_name}`,
       email: normalizedEmail,
       phone: normalizedPhone,
@@ -636,6 +661,7 @@ export const hrService = {
     const employee = await db.insert('employees', {
       company_id: Number(staffData.company_id || actor?.company_id || req?.user?.company_id || 1),
       user_id: user.id,
+      auth_user_id: authUserId,
       employee_code,
       first_name,
       last_name,

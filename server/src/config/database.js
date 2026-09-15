@@ -23,18 +23,29 @@ try {
 }
 
 export let supabase = null;
+export let supabaseAdmin = null;
 
 const isTestMode = process.env.NODE_ENV === 'test' || Boolean(process.env.TEST_MODE) || process.execArgv.includes('--test') || process.argv.some(a => a.includes('test'));
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || process.env.SUPABASE_ANON_KEY;
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const anonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_KEY;
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 
 // Dynamically initialize Supabase if credentials are provided and not in test runner
-if (!isTestMode && process.env.SUPABASE_URL && supabaseKey) {
+if (!isTestMode && supabaseUrl && (serviceRoleKey || anonKey)) {
   try {
     const { createClient } = await import('@supabase/supabase-js');
-    supabase = createClient(process.env.SUPABASE_URL, supabaseKey, {
-      auth: { persistSession: false }
-    });
-    logger.info('Connected to Supabase PostgreSQL database.');
+    if (anonKey || serviceRoleKey) {
+      supabase = createClient(supabaseUrl, anonKey || serviceRoleKey, {
+        auth: { persistSession: false, autoRefreshToken: false }
+      });
+    }
+    if (serviceRoleKey) {
+      supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
+        auth: { persistSession: false, autoRefreshToken: false }
+      });
+      logger.info('Supabase Admin Client initialized with Service Role.');
+    }
+    logger.info('Connected to Supabase database.');
   } catch (err) {
     logger.warn(`Supabase connection failed: ${err.message}. Operating in local transactional mode.`);
   }

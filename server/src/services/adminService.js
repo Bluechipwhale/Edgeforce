@@ -2,9 +2,12 @@
 // EDGEWFORCE - ADMIN & MULTI-TENANT ONBOARDING SERVICE
 // ==============================================================================
 
-import { db } from '../config/database.js';
+import { db, supabase } from '../config/database.js';
+import { supabaseAuthService } from './supabaseAuthService.js';
 import { logger } from '../utils/logger.js';
 import bcrypt from 'bcryptjs';
+
+const isTestMode = process.env.NODE_ENV === 'test' || Boolean(process.env.TEST_MODE);
 
 export const adminService = {
   /**
@@ -201,7 +204,17 @@ export const adminService = {
     }
 
     if (user) {
-      await db.update('users', user.id, { password_hash: passwordHash });
+      if (!isTestMode && user.auth_user_id) {
+        try {
+          await supabaseAuthService.updatePassword(user.auth_user_id, newPassword.trim());
+        } catch (sbErr) {
+          logger.warn(`Supabase admin password update note: ${sbErr.message}`);
+        }
+      }
+      await db.update('users', user.id, {
+        password_hash: passwordHash,
+        requires_password_change: false
+      });
     }
 
     await db.insert('audit_logs', {

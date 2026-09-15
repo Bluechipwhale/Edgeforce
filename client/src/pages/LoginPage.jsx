@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowRight, ShieldCheck, Sparkles, AlertCircle, KeyRound, CheckCircle2, X, Lock, Mail } from 'lucide-react';
 import { api } from '../lib/api';
+import { supabase, signInWithSupabase, requestSupabasePasswordReset, updateSupabasePassword } from '../lib/supabase';
 
 export default function LoginPage({ onLogin, onNavigatePublic }) {
   const [identifier, setIdentifier] = useState('');
@@ -9,21 +10,47 @@ export default function LoginPage({ onLogin, onNavigatePublic }) {
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  // Forgot Password Modal State
+  // Password Recovery State
   const [forgotModalOpen, setForgotModalOpen] = useState(false);
   const [forgotIdentifier, setForgotIdentifier] = useState('');
-  const [forgotStep, setForgotStep] = useState(1); // 1 = request token, 2 = enter token & new password
-  const [resetToken, setResetToken] = useState('');
+  const [forgotStep, setForgotStep] = useState(1); // 1 = request reset email, 2 = set new password
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotError, setForgotError] = useState('');
   const [forgotSuccess, setForgotSuccess] = useState('');
+  const [isRecoverySession, setIsRecoverySession] = useState(false);
+
+  // Detect Supabase Password Recovery from Email Action Link in URL
+  useEffect(() => {
+    const hash = window.location.hash || '';
+    const search = window.location.search || '';
+    const isRecovery = hash.includes('type=recovery') || search.includes('type=recovery') || hash.includes('reset-password');
+
+    if (isRecovery) {
+      setIsRecoverySession(true);
+      setForgotStep(2);
+      setForgotModalOpen(true);
+      setForgotSuccess('Recovery session established. Please set your new secure password below.');
+    }
+
+    if (supabase) {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'PASSWORD_RECOVERY') {
+          setIsRecoverySession(true);
+          setForgotStep(2);
+          setForgotModalOpen(true);
+          setForgotSuccess('Recovery session verified. Please enter your new password.');
+        }
+      });
+      return () => subscription?.unsubscribe();
+    }
+  }, []);
 
   const handleSignIn = async (e) => {
     e?.preventDefault();
     if (!identifier || !password) {
-      setError('Please provide your email address or phone number, and your password.');
+      setError('Please provide your corporate email address or phone number, and your password.');
       return;
     }
 
@@ -31,18 +58,39 @@ export default function LoginPage({ onLogin, onNavigatePublic }) {
     setError('');
     setSuccessMsg('');
     try {
-      const res = await api.post('/auth/login', { identifier, password });
-      const token = res.token || res.data?.token;
+      // 1. Authenticate via Supabase Auth or Backend API
+      const isEmailInput = identifier.includes('@');
+      let sessionData = null;
+
+      if (supabase && isEmailInput) {
+        try {
+          sessionData = await signInWithSupabase(identifier, password);
+        } catch (sbErr) {
+          // If Supabase Auth failed, let backend verify if there's any fallback
+          console.warn('Direct Supabase sign-in note:', sbErr.message);
+        }
+      }
+
+      // 2. Fetch full EdgeWForce user and employee profile from backend
+      const res = await api.post('/auth/login', {
+        identifier,
+        password,
+        supabase_token: sessionData?.session?.access_token || null
+      });
+
+      const token = sessionData?.session?.access_token || res.token || res.data?.token;
       const userData = res.user || res.data?.user || (res.id ? res : res.data);
+
       if (token) {
         localStorage.setItem('ewf_token', token);
       }
       if (userData) {
         localStorage.setItem('ewf_user', JSON.stringify(userData));
       }
+
       onLogin?.(userData);
     } catch (err) {
-      setError(err.message || 'Invalid login credentials. Please verify your email/phone and password.');
+      setError(err.message || 'Invalid login credentials. Please verify your email and password.');
     } finally {
       setLoading(false);
     }
@@ -51,7 +99,7 @@ export default function LoginPage({ onLogin, onNavigatePublic }) {
   const handleRequestResetToken = async (e) => {
     e?.preventDefault();
     if (!forgotIdentifier) {
-      setForgotError('Please enter your registered email address, phone number, or Staff ID.');
+      setForgotError('Please enter your registered corporate email address or staff ID.');
       return;
     }
 
@@ -59,15 +107,25 @@ export default function LoginPage({ onLogin, onNavigatePublic }) {
     setForgotError('');
     setForgotSuccess('');
     try {
-      const res = await api.post('/auth/forgot-password', { identifier: forgotIdentifier });
-      const resetCode = res.reset_token || res.data?.reset_token;
-      if (resetCode) {
-        setResetToken(resetCode);
+      // If email, call Supabase Auth directly or via backend
+      let emailToSend = forgotIdentifier.trim();
+      
+      const res = await api.post('/auth/forgot-password', { identifier: emailToSend });
+      
+      if (supabase && emailToSend.includes('@')) {
+        try {
+          await requestSupabasePasswordReset(emailToSend);
+        } catch (sbErr) {
+          console.warn('Supabase direct reset request note:', sbErr.message);
+        }
       }
-      setForgotSuccess(res.message || (resetCode ? `Verification code generated: ${resetCode}` : 'Verification code processed.'));
-      setForgotStep(2);
+
+      setForgotSuccess(
+        res.message ||
+        `If an account exists for ${emailToSend}, a password recovery link has been sent. Please check your email inbox.`
+      );
     } catch (err) {
-      setForgotError(err.message || 'Failed to process password reset request.');
+      setForgotError(err.message || 'Failed to process password recovery request. Please try again.');
     } finally {
       setForgotLoading(false);
     }
@@ -75,8 +133,8 @@ export default function LoginPage({ onLogin, onNavigatePublic }) {
 
   const handleConfirmResetPassword = async (e) => {
     e?.preventDefault();
-    if (!resetToken || !newPassword) {
-      setForgotError('Please enter the verification code and your new password.');
+    if (!newPassword) {
+      setForgotError('Please enter your new password.');
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -91,22 +149,27 @@ export default function LoginPage({ onLogin, onNavigatePublic }) {
     setForgotLoading(true);
     setForgotError('');
     try {
+      // 1. Update in Supabase Auth if in active recovery session
+      if (supabase && isRecoverySession) {
+        await updateSupabasePassword(newPassword);
+      }
+
+      // 2. Also update through backend
       const res = await api.post('/auth/reset-password', {
         identifier: forgotIdentifier,
-        token: resetToken,
         new_password: newPassword
       });
-      setSuccessMsg(res.message || 'Password reset successfully! Please sign in with your new password.');
-      setIdentifier(forgotIdentifier);
-      setPassword(newPassword);
+
+      setSuccessMsg(res.message || 'Password updated successfully! You can now sign in with your new password.');
       setForgotModalOpen(false);
       setForgotStep(1);
       setForgotIdentifier('');
-      setResetToken('');
       setNewPassword('');
       setConfirmPassword('');
+      setIsRecoverySession(false);
+      window.history.replaceState(null, '', window.location.pathname);
     } catch (err) {
-      setForgotError(err.message || 'Password reset failed. Please check the verification code.');
+      setForgotError(err.message || 'Password update failed. Please request a new recovery link.');
     } finally {
       setForgotLoading(false);
     }
@@ -263,9 +326,13 @@ export default function LoginPage({ onLogin, onNavigatePublic }) {
                   <KeyRound size={18} />
                 </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-white">Reset Account Password</h3>
+                  <h3 className="text-base font-extrabold text-white">
+                    {forgotStep === 1 ? 'Recover Account Password' : 'Set New Permanent Password'}
+                  </h3>
                   <p className="text-[11px] text-zinc-400">
-                    {forgotStep === 1 ? 'Step 1: Enter your registered corporate email' : 'Step 2: Enter verification code & new password'}
+                    {forgotStep === 1
+                      ? 'Enter your corporate email to receive a secure recovery link.'
+                      : 'Choose a strong password (minimum 8 characters) to secure your account.'}
                   </p>
                 </div>
               </div>
@@ -294,12 +361,12 @@ export default function LoginPage({ onLogin, onNavigatePublic }) {
             {forgotStep === 1 ? (
               <form onSubmit={handleRequestResetToken} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-zinc-300 mb-1">Corporate Email, Phone, or Staff ID</label>
+                  <label className="block text-xs font-bold text-zinc-300 mb-1">Corporate Email Address</label>
                   <input
-                    type="text"
+                    type="email"
                     required
                     className="form-input bg-zinc-900 border-zinc-800 text-white text-xs py-2.5"
-                    placeholder="e.g. name@company.com, 08012345678, or EMP-1001"
+                    placeholder="e.g. name@company.com"
                     value={forgotIdentifier}
                     onChange={(e) => setForgotIdentifier(e.target.value)}
                   />
@@ -317,25 +384,12 @@ export default function LoginPage({ onLogin, onNavigatePublic }) {
                     disabled={forgotLoading}
                     className="btn-primary text-xs py-2 px-4 font-bold"
                   >
-                    {forgotLoading ? 'Generating…' : 'Generate Reset Code'}
+                    {forgotLoading ? 'Sending…' : 'Send Recovery Email'}
                   </button>
                 </div>
               </form>
             ) : (
               <form onSubmit={handleConfirmResetPassword} className="space-y-3.5">
-                <div>
-                  <label className="block text-xs font-bold text-zinc-300 mb-1">6-Digit Verification Code</label>
-                  <input
-                    type="text"
-                    required
-                    maxLength={6}
-                    className="form-input bg-zinc-900 border-zinc-800 text-white text-sm font-mono tracking-widest text-center py-2.5"
-                    placeholder="123456"
-                    value={resetToken}
-                    onChange={(e) => setResetToken(e.target.value)}
-                  />
-                </div>
-
                 <div>
                   <label className="block text-xs font-bold text-zinc-300 mb-1">New Password (min 8 characters)</label>
                   <input
@@ -383,7 +437,7 @@ export default function LoginPage({ onLogin, onNavigatePublic }) {
                       disabled={forgotLoading}
                       className="btn-primary text-xs py-2 px-4 font-bold"
                     >
-                      {forgotLoading ? 'Updating…' : 'Set New Password'}
+                      {forgotLoading ? 'Saving…' : 'Save New Password'}
                     </button>
                   </div>
                 </div>
