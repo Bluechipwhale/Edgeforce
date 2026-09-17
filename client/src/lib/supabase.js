@@ -98,6 +98,11 @@ export async function updateSupabasePassword(newPassword) {
  * Helper to log out of Supabase Auth
  */
 export async function signOutSupabase() {
+  localStorage.removeItem('ewf_token');
+  localStorage.removeItem('ewf_user');
+  localStorage.removeItem('ewf_current_tab');
+  localStorage.removeItem('ewf_supabase_auth');
+
   if (supabase) {
     try {
       await supabase.auth.signOut();
@@ -105,8 +110,4 @@ export async function signOutSupabase() {
       // Ignore network errors during logout
     }
   }
-  localStorage.removeItem('ewf_token');
-  localStorage.removeItem('ewf_user');
-  localStorage.removeItem('ewf_current_tab');
-  localStorage.removeItem('ewf_supabase_auth');
 }

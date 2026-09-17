@@ -160,7 +160,10 @@ export default function App() {
             })
             .catch(() => {});
         } else if (event === 'SIGNED_OUT') {
-          signOutSupabase().catch(() => {});
+          localStorage.removeItem('ewf_token');
+          localStorage.removeItem('ewf_user');
+          localStorage.removeItem('ewf_current_tab');
+          localStorage.removeItem('ewf_supabase_auth');
           setUser(null);
         }
       });
@@ -187,8 +190,9 @@ export default function App() {
   };
 
   const handleLogout = async () => {
-    await signOutSupabase();
     setUser(null);
+    setMustChangePassword(false);
+    void signOutSupabase();
   };
 
   if (loading) {

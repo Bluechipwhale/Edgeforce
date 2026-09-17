@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowRight, ShieldCheck, Sparkles, AlertCircle, KeyRound, CheckCircle2, X, Lock, Mail } from 'lucide-react';
 import { api } from '../lib/api';
-import { supabase, signInWithSupabase, requestSupabasePasswordReset, updateSupabasePassword } from '../lib/supabase';
+import { supabase, requestSupabasePasswordReset, updateSupabasePassword } from '../lib/supabase';
 
 export default function LoginPage({ onLogin, onNavigatePublic }) {
   const [identifier, setIdentifier] = useState('');
@@ -58,27 +58,12 @@ export default function LoginPage({ onLogin, onNavigatePublic }) {
     setError('');
     setSuccessMsg('');
     try {
-      // 1. Authenticate via Supabase Auth or Backend API
-      const isEmailInput = identifier.includes('@');
-      let sessionData = null;
-
-      if (supabase && isEmailInput) {
-        try {
-          sessionData = await signInWithSupabase(identifier, password);
-        } catch (sbErr) {
-          // If Supabase Auth failed, let backend verify if there's any fallback
-          console.warn('Direct Supabase sign-in note:', sbErr.message);
-        }
-      }
-
-      // 2. Fetch full EdgeWForce user and employee profile from backend
       const res = await api.post('/auth/login', {
-        identifier,
+        identifier: identifier.trim(),
         password,
-        supabase_token: sessionData?.session?.access_token || null
       });
 
-      const token = sessionData?.session?.access_token || res.token || res.data?.token;
+      const token = res.token || res.data?.token;
       const userData = res.user || res.data?.user || (res.id ? res : res.data);
 
       if (token) {
