@@ -68,8 +68,18 @@ ode_modules, client/dist, logs, and temporary files are never exposed to GitHub.
 2. Click **New query**.
 3. Open the file supabase/schema.sql from this codebase, copy all contents, paste into the SQL Editor, and click **Run**.
    - *This creates all 24+ tables, primary/foreign keys, indexes, Row Level Security (RLS) tenant isolation policies, and initializes the edgewforce-media storage bucket.*
-4. Open the file supabase/seed.sql, copy all contents, paste into a new SQL query, and click **Run**.
-   - *This seeds initial departments, ranks, permissions, and demo users.*
+4. Run the migrations in this order: `001_initial_schema.sql`, `002_security_rls.sql`, `003_audit_triggers.sql`, `004_work_locations_and_assignments.sql`, `005_staff_hr_management_and_rls.sql`, `006_authoritative_staff_seed.sql`, and `007_supabase_auth_integration.sql`.
+   - *Migration 006 is the important production sync: it currently contains all 68 users and 68 employee records from the offline store and is safe to rerun because it upserts by ID.*
+5. Do not rely on `supabase/seed.sql` alone for production staff data. It contains only the small demo dataset; migration 006 is the authoritative staff seed.
+6. Verify the online staff count in the SQL Editor:
+   ```sql
+   SELECT COUNT(*) AS users FROM public.users;
+   SELECT COUNT(*) AS employees FROM public.employees;
+   SELECT id, employee_code, full_name, work_email, status
+   FROM public.employees
+   ORDER BY id;
+   ```
+   The employee count should be at least 68 after the migration.
 
 ### C. Verify Cloud Storage Bucket
 1. In the Supabase Dashboard, click **Storage** in the left menu.
@@ -121,14 +131,14 @@ pm --workspace client run build (or leave default from ercel.json)
 | JWT_SECRET | *(Generate a 32+ char random string)* | JWT session token signing |
 | SUPABASE_URL | https://<your-project-ref>.supabase.co | Supabase endpoint |
 | SUPABASE_ANON_KEY | *(Your Supabase anon key)* | Supabase public key |
-| SUPABASE_SERVICE_ROLE_KEY | *(Your Supabase service_role key)* | Supabase backend key |
+| SUPABASE_SERVICE_ROLE_KEY | *(Your Supabase service_role key)* | **Required by the Vercel API to read the complete staff directory; never expose it in Vite/client variables** |
 | SUPABASE_STORAGE_BUCKET | edgewforce-media | Storage bucket name |
 | PAYSTACK_SECRET_KEY | sk_live_... | Paystack payments |
 | PAYSTACK_PUBLIC_KEY | pk_live_... | Paystack public key |
 | SMTP_HOST | smtp.resend.com | Email delivery host |
 | SMTP_PORT | 465 | SMTP SSL Port |
-| SMTP_USER | esend | SMTP username |
-| SMTP_PASS | e_... | SMTP API key / password |
+| SMTP_USER | resend | SMTP username |
+| SMTP_PASS | re_... | SMTP API key / password |
 | EMAIL_FROM | operations@your-custom-domain.com | Sender email address |
 
 6. Click **Deploy**. Vercel will build the frontend assets and deploy the serverless API.
