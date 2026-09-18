@@ -29,13 +29,14 @@ const isTestMode = process.env.NODE_ENV === 'test' || Boolean(process.env.TEST_M
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const anonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_KEY;
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const databaseKey = serviceRoleKey || anonKey;
 
 // Dynamically initialize Supabase if credentials are provided and not in test runner
-if (!isTestMode && supabaseUrl && (serviceRoleKey || anonKey)) {
+if (!isTestMode && supabaseUrl && databaseKey) {
   try {
     const { createClient } = await import('@supabase/supabase-js');
-    if (anonKey || serviceRoleKey) {
-      supabase = createClient(supabaseUrl, anonKey || serviceRoleKey, {
+    if (databaseKey) {
+      supabase = createClient(supabaseUrl, databaseKey, {
         auth: { persistSession: false, autoRefreshToken: false }
       });
     }
@@ -548,8 +549,14 @@ export const db = {
     if (supabase && !isTestMode) {
       try {
         const { data, error } = await supabase.from(canonicalTable).insert(normalized).select().single();
-        if (!error && data) supabaseRecord = data;
+        if (error) {
+          logger.error(`Supabase insert for ${canonicalTable} failed: ${error.message}`);
+          if (serviceRoleKey) throw error;
+        } else if (data) {
+          supabaseRecord = data;
+        }
       } catch (err) {
+        if (serviceRoleKey) throw err;
         logger.warn(`Supabase insert for ${canonicalTable} failed, using local store: ${err.message}`);
       }
     }

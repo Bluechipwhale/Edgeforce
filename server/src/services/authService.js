@@ -4,7 +4,7 @@
 // ==============================================================================
 
 import bcrypt from 'bcryptjs';
-import { db, supabase } from '../config/database.js';
+import { db, supabase, supabaseAdmin } from '../config/database.js';
 import { supabaseAuthService } from './supabaseAuthService.js';
 import { signUserToken } from '../middleware/auth.js';
 import { recordAudit } from '../middleware/auditLogger.js';
@@ -12,7 +12,10 @@ import { emailService } from './emailService.js';
 import { normalizePhone, isEmail, normalizeEmail } from '../utils/phoneNormalizer.js';
 import { logger } from '../utils/logger.js';
 
-const isTestMode = process.env.NODE_ENV === 'test' || Boolean(process.env.TEST_MODE);
+const isTestMode = process.env.NODE_ENV === 'test'
+  || Boolean(process.env.TEST_MODE)
+  || process.execArgv.includes('--test')
+  || process.argv.some(argument => argument.includes('test'));
 const CLIENT_URL = process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',')[0].trim() : 'http://localhost:5173';
 
 export async function findUserByIdentifier(identifier) {
@@ -298,6 +301,10 @@ export const authService = {
       throw new Error('Please provide an email address or phone number.');
     }
 
+    if (!isTestMode && !supabaseAdmin) {
+      throw new Error('Registration is not configured. Set SUPABASE_SERVICE_ROLE_KEY on the server before registering staff.');
+    }
+
     let normalizedEmail = null;
     if (email && email.trim()) {
       normalizedEmail = normalizeEmail(email);
@@ -347,6 +354,10 @@ export const authService = {
       status: 'active'
     });
 
+    if (!user?.id) {
+      throw new Error('User account was not saved to Supabase.');
+    }
+
     const empCode = `EMP-${1000 + Number(user.id)}`;
     const [firstName, ...rest] = full_name.split(' ');
     const lastName = rest.join(' ') || firstName;
@@ -364,6 +375,10 @@ export const authService = {
       rank_code: rank_code || 'STAFF',
       base_salary: Number(base_salary || 350000)
     });
+
+    if (!employee?.id) {
+      throw new Error('Employee profile was not saved to Supabase.');
+    }
 
     // Initialize leave balance
     await db.insert('leave_balances', {
