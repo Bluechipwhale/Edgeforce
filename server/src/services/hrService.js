@@ -254,6 +254,53 @@ export const hrService = {
   },
 
   /**
+   * Removes a staff member from active access while preserving employee history.
+   */
+  async deleteEmployee(employeeId, actor = null, req = null) {
+    const employee = await db.findById('employees', employeeId);
+    if (!employee) throw new Error('Employee not found');
+
+    const protectedEmails = new Set([
+      'it@edgewforce.com',
+      'admin@edgewforce.com',
+      'ceo@edgewforce.com',
+      'hr@edgewforce.com'
+    ]);
+    const employeeEmail = String(employee.work_email || employee.personal_email || employee.email || '').toLowerCase();
+    if (protectedEmails.has(employeeEmail) || Number(employee.user_id) <= 9) {
+      throw new Error('Protected system staff accounts cannot be deleted. Update their status instead.');
+    }
+
+    const subordinates = await db.find('employees', { reporting_manager_id: Number(employeeId) });
+    for (const subordinate of subordinates) {
+      await db.update('employees', subordinate.id, { reporting_manager_id: employee.reporting_manager_id || null });
+    }
+
+    const updatedEmp = await db.update('employees', employee.id, {
+      status: 'inactive',
+      onboarding_status: 'Deactivated',
+      updated_at: new Date().toISOString()
+    });
+    if (employee.user_id) {
+      await db.update('users', employee.user_id, {
+        status: 'inactive',
+        onboarding_status: 'Deactivated',
+        updated_at: new Date().toISOString()
+      });
+    }
+
+    await recordAudit(actor, 'STAFF_DEACTIVATED', 'employees', employee.id, {
+      employee_code: employee.employee_code,
+      reason: 'HR staff delete action'
+    }, req);
+
+    return {
+      employee: updatedEmp || { ...employee, status: 'inactive' },
+      message: `${employee.first_name} ${employee.last_name} was removed from active staff access.`
+    };
+  },
+
+  /**
    * Triggers onboarding invitation / reset flow.
    */
   async resendInvitation(employeeId, actor = null, req = null) {

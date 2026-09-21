@@ -25,6 +25,7 @@ router.post('/employees/register', hasRole('HR', 'HR_MANAGER', 'CEO', 'CTO', 'IT
 router.post('/staff/register', hasRole('HR', 'HR_MANAGER', 'CEO', 'CTO', 'IT_ADMIN', 'SUPER_ADMIN', 'ADMIN'), hrController.registerStaff);
 router.put('/employees/:id', hasRole('HR', 'HR_MANAGER', 'CEO', 'CTO', 'IT_ADMIN', 'SUPER_ADMIN', 'ADMIN'), hrController.updateEmployee);
 router.put('/employees/:id/status', hasRole('HR', 'HR_MANAGER', 'CEO', 'CTO', 'IT_ADMIN', 'SUPER_ADMIN', 'ADMIN'), hrController.updateStaffStatus);
+router.delete('/employees/:id', hasRole('HR', 'HR_MANAGER', 'CEO', 'CTO', 'IT_ADMIN', 'SUPER_ADMIN', 'ADMIN'), hrController.deleteEmployee);
 router.post('/employees/:id/resend-invitation', hasRole('HR', 'HR_MANAGER', 'CEO', 'CTO', 'IT_ADMIN', 'SUPER_ADMIN', 'ADMIN'), hrController.resendInvitation);
 router.get('/audit-logs', hasRole('HR', 'HR_MANAGER', 'CEO', 'CTO', 'IT_ADMIN', 'SUPER_ADMIN', 'ADMIN'), hrController.getAuditLogs);
 router.get('/attendance', hasRole('HR', 'HR_MANAGER', 'CEO', 'CTO', 'IT_ADMIN', 'SUPER_ADMIN', 'ADMIN', 'MANAGER'), hrController.getAttendance);

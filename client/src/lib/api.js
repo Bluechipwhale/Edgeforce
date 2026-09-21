@@ -32,6 +32,7 @@ export async function request(path, options = {}) {
   };
 
   const url = path.startsWith('http') ? path : `${API_BASE}${path}`;
+  const isAuthenticationRequest = path.startsWith('/auth/');
 
   // If completely offline and this is a GET request, serve directly from cache
   if (!navigator.onLine && method === 'GET') {
@@ -42,7 +43,7 @@ export async function request(path, options = {}) {
   }
 
   // If offline and this is a mutation (POST/PUT), automatically queue
-  if (!navigator.onLine && (method === 'POST' || method === 'PUT')) {
+  if (!navigator.onLine && !isAuthenticationRequest && (method === 'POST' || method === 'PUT')) {
     let payload = {};
     if (typeof options.body === 'string') {
       try {

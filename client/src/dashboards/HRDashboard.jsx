@@ -236,6 +236,20 @@ export default function HRDashboard({ user, initialTab = 'overview' }) {
     }
   };
 
+  const handleDeleteStaff = async (emp) => {
+    const name = emp.full_name || `${emp.first_name || ''} ${emp.last_name || ''}`.trim();
+    if (!window.confirm(`Remove ${name} from active staff access? Their records and audit history will be preserved.`)) return;
+
+    try {
+      await api.delete(`/hr/employees/${emp.id}`);
+      setStatusMsg(`${name} was removed from active staff access.`);
+      setSelectedStaffForView(null);
+      loadData();
+    } catch (err) {
+      setStatusMsg(`Staff removal failed: ${err.message}`);
+    }
+  };
+
   const handleResendInvitation = async (emp) => {
     try {
       const res = await api.post(`/hr/employees/${emp.id}/resend-invitation`, {});
@@ -881,6 +895,13 @@ export default function HRDashboard({ user, initialTab = 'overview' }) {
                               title="Edit Staff Record"
                             >
                               <Edit3 size={13} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteStaff(emp)}
+                              className="p-1.5 text-zinc-400 hover:text-rose-600 hover:bg-rose-500/10 rounded-lg transition"
+                              title="Remove staff access"
+                            >
+                              <Trash2 size={13} />
                             </button>
                           </div>
                         </td>

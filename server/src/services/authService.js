@@ -18,6 +18,43 @@ const isTestMode = process.env.NODE_ENV === 'test'
   || process.argv.some(argument => argument.includes('test'));
 const CLIENT_URL = process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',')[0].trim() : 'http://localhost:5173';
 
+function normalizeEmployeeRole(roleName) {
+  const normalized = String(roleName || '').trim().toUpperCase();
+  const aliases = {
+    SUPER_ADMIN: 'SUPER_ADMIN',
+    AGENT_ADMIN: 'ADMIN',
+    SUPERVISOR: 'SUPERVISOR',
+    SALES_AGENT: 'SALES_AGENT',
+    FIELD_AGENT: 'FIELD_AGENT',
+    HR_MANAGER: 'HR_MANAGER',
+    STAFF: 'EMPLOYEE'
+  };
+  return aliases[normalized] || normalized || 'EMPLOYEE';
+}
+
+async function userFromEmployee(employee) {
+  if (!employee?.user_id) return null;
+
+  const role = employee.role_id ? await db.findById('roles', employee.role_id) : null;
+  const email = employee.work_email || employee.personal_email || employee.email;
+  const fullName = employee.full_name || [employee.first_name, employee.last_name].filter(Boolean).join(' ').trim();
+
+  return {
+    id: employee.user_id,
+    uuid: employee.user_id,
+    auth_user_id: employee.user_id,
+    company_id: employee.company_id,
+    full_name: fullName || employee.employee_code || 'Staff Member',
+    email,
+    phone: employee.phone,
+    role_code: normalizeEmployeeRole(role?.name),
+    status: employee.status || 'active',
+    requires_password_change: Boolean(employee.requires_password_change),
+    onboarding_status: employee.onboarding_status || 'Active',
+    employee
+  };
+}
+
 export async function findUserByIdentifier(identifier) {
   if (!identifier) return null;
   const trimmedInput = String(identifier).trim();
@@ -41,7 +78,7 @@ export async function findUserByIdentifier(identifier) {
         (e.email && normalizeEmail(e.email) === normalizedEmail)
       );
       if (emp?.user_id) {
-        user = await db.findById('users', emp.user_id);
+        user = await db.findById('users', emp.user_id) || await userFromEmployee(emp);
       }
     }
   }
@@ -54,7 +91,7 @@ export async function findUserByIdentifier(identifier) {
         const employees = await db.find('employees');
         const emp = employees.find(e => normalizePhone(e.phone) === normalizedPhone);
         if (emp?.user_id) {
-          user = await db.findById('users', emp.user_id);
+          user = await db.findById('users', emp.user_id) || await userFromEmployee(emp);
         }
       }
     }
@@ -77,7 +114,7 @@ export async function findUserByIdentifier(identifier) {
       );
     });
     if (emp?.user_id) {
-      user = await db.findById('users', emp.user_id);
+      user = await db.findById('users', emp.user_id) || await userFromEmployee(emp);
     }
   }
 

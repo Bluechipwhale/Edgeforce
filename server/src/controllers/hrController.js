@@ -57,6 +57,15 @@ export const hrController = {
     }
   },
 
+  async deleteEmployee(req, res) {
+    try {
+      const result = await hrService.deleteEmployee(req.params.id, req.user, req);
+      res.json({ success: true, data: result, message: result.message });
+    } catch (err) {
+      res.status(400).json({ success: false, error: { message: err.message } });
+    }
+  },
+
   async resendInvitation(req, res) {
     try {
       const result = await hrService.resendInvitation(req.params.id, req.user, req);

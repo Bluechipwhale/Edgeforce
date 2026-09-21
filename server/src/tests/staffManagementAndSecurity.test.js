@@ -84,4 +84,23 @@ describe('Authoritative Staff Provisioning & Security Tests', () => {
     assert(sampleEmp.account_number, 'HR must see account_number');
     assert(sampleEmp.bank_name, 'HR must see bank_name');
   });
+
+  it('6. HR deactivation preserves staff history and protects system accounts', async () => {
+    const employee = (await db.find('employees')).find(record => Number(record.user_id) > 9);
+    assert(employee, 'An imported staff account should be available for deactivation testing');
+
+    const result = await hrService.deleteEmployee(employee.id, {
+      id: 3,
+      email: 'hr@edgewforce.com',
+      role_code: 'HR_MANAGER'
+    });
+
+    assert.equal(result.employee.status, 'inactive');
+    assert.equal((await db.findById('employees', employee.id)).status, 'inactive');
+    assert.equal((await db.findById('users', employee.user_id)).status, 'inactive');
+    await assert.rejects(
+      () => hrService.deleteEmployee(1, { id: 3, email: 'hr@edgewforce.com', role_code: 'HR_MANAGER' }),
+      /Protected system staff accounts cannot be deleted/i
+    );
+  });
 });
