@@ -128,7 +128,8 @@ pm --workspace client run build (or leave default from ercel.json)
 | :--- | :--- | :--- |
 | NODE_ENV | production | Production mode |
 | CLIENT_URL | https://your-custom-domain.com | Allowed CORS origins |
-| JWT_SECRET | *(Generate a 32+ char random string)* | JWT session token signing |
+| JWT_SECRET | *(Your private production JWT secret)* | JWT session token signing; set this to the Supabase JWT secret when using Supabase-issued sessions |
+| SUPABASE_JWT_SECRET | *(Optional alias for JWT_SECRET)* | Supported fallback for the Supabase JWT secret; never expose it in Vite/client variables |
 | SUPABASE_URL | https://<your-project-ref>.supabase.co | Supabase endpoint |
 | SUPABASE_ANON_KEY | *(Your Supabase anon key)* | Supabase public key |
 | SUPABASE_SERVICE_ROLE_KEY | *(Your Supabase service_role key)* | **Required by the Vercel API to read the complete staff directory; never expose it in Vite/client variables** |

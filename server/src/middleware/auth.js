@@ -7,6 +7,7 @@ import jwt from 'jsonwebtoken';
 import { db, supabase } from '../config/database.js';
 
 const JWT_SECRET = process.env.JWT_SECRET
+  || process.env.SUPABASE_JWT_SECRET
   || (process.env.NODE_ENV === 'production'
     ? null
     : '3458929f44e69c199398c77212600d9f760aabb9b1dda42680556892307277ea');
