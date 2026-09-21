@@ -132,7 +132,7 @@ pm --workspace client run build (or leave default from ercel.json)
 | SUPABASE_JWT_SECRET | *(Optional alias for JWT_SECRET)* | Supported fallback for the Supabase JWT secret; never expose it in Vite/client variables |
 | SUPABASE_URL | https://<your-project-ref>.supabase.co | Supabase endpoint |
 | SUPABASE_ANON_KEY | *(Your Supabase anon key)* | Supabase public key |
-| SUPABASE_SERVICE_ROLE_KEY | *(Your Supabase service_role key)* | **Required by the Vercel API to read the complete staff directory; never expose it in Vite/client variables** |
+| SUPABASE_SERVICE_ROLE_KEY | `sb_secret_...` from this same Supabase project | **Required by the Vercel API for registration and database writes; never expose it in Vite/client variables. Verify it is accepted by the project before deploying.** |
 | SUPABASE_STORAGE_BUCKET | edgewforce-media | Storage bucket name |
 | PAYSTACK_SECRET_KEY | sk_live_... | Paystack payments |
 | PAYSTACK_PUBLIC_KEY | pk_live_... | Paystack public key |
