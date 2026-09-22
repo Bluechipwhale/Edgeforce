@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS public.employee_location_assignments (
     company_id BIGINT NOT NULL
         REFERENCES public.companies(id)
         ON DELETE CASCADE,
-    employee_id UUID NOT NULL
+    employee_id BIGINT NOT NULL
         REFERENCES public.employees(id)
         ON DELETE CASCADE,
     location_id BIGINT NOT NULL
@@ -72,7 +72,7 @@ CREATE TABLE IF NOT EXISTS public.location_assignment_history (
     company_id BIGINT NOT NULL
         REFERENCES public.companies(id)
         ON DELETE CASCADE,
-    employee_id UUID NOT NULL
+    employee_id BIGINT NOT NULL
         REFERENCES public.employees(id)
         ON DELETE CASCADE,
     previous_location_id BIGINT
@@ -102,37 +102,10 @@ CREATE INDEX IF NOT EXISTS idx_emp_loc_assign_location ON public.employee_locati
 CREATE INDEX IF NOT EXISTS idx_emp_loc_assign_active ON public.employee_location_assignments(employee_id, is_active);
 CREATE INDEX IF NOT EXISTS idx_loc_history_employee ON public.location_assignment_history(employee_id);
 
--- 5. ROW LEVEL SECURITY (RLS) POLICIES
+-- 5. ROW LEVEL SECURITY (RLS)
 ALTER TABLE public.work_locations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.employee_location_assignments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.location_assignment_history ENABLE ROW LEVEL SECURITY;
 
--- Work Locations Policy
-CREATE POLICY work_locations_tenant_isolation ON public.work_locations
-    FOR ALL
-    USING (company_id = (
-        SELECT company_id FROM public.profiles WHERE id = auth.uid()
-    ))
-    WITH CHECK (company_id = (
-        SELECT company_id FROM public.profiles WHERE id = auth.uid()
-    ));
-
--- Employee Location Assignments Policy
-CREATE POLICY employee_location_assignments_tenant_isolation ON public.employee_location_assignments
-    FOR ALL
-    USING (company_id = (
-        SELECT company_id FROM public.profiles WHERE id = auth.uid()
-    ))
-    WITH CHECK (company_id = (
-        SELECT company_id FROM public.profiles WHERE id = auth.uid()
-    ));
-
--- Location Assignment History Policy
-CREATE POLICY location_assignment_history_tenant_isolation ON public.location_assignment_history
-    FOR ALL
-    USING (company_id = (
-        SELECT company_id FROM public.profiles WHERE id = auth.uid()
-    ))
-    WITH CHECK (company_id = (
-        SELECT company_id FROM public.profiles WHERE id = auth.uid()
-    ));
+-- Policies are installed by 010_security_and_location_policy_hardening.sql,
+-- after the auth_user_id mapping and trusted private helpers exist.

@@ -68,7 +68,7 @@ ode_modules, client/dist, logs, and temporary files are never exposed to GitHub.
 2. Click **New query**.
 3. Open the file supabase/schema.sql from this codebase, copy all contents, paste into the SQL Editor, and click **Run**.
    - *This creates all 24+ tables, primary/foreign keys, indexes, Row Level Security (RLS) tenant isolation policies, and initializes the edgewforce-media storage bucket.*
-4. Run the migrations in this order: `001_initial_schema.sql`, `002_security_rls.sql`, `003_audit_triggers.sql`, `004_work_locations_and_assignments.sql`, `005_staff_hr_management_and_rls.sql`, `006_authoritative_staff_seed.sql`, and `007_supabase_auth_integration.sql`.
+4. Run the migrations in this order: `001_initial_schema.sql`, `002_security_rls.sql`, `003_audit_triggers.sql`, `004_work_locations_and_assignments.sql`, `005_staff_hr_management_and_rls.sql`, `006_authoritative_staff_seed.sql`, `007_supabase_auth_integration.sql`, `008_registration_persistence.sql`, `009_production_auth_model_alignment.sql`, and `010_security_and_location_policy_hardening.sql`.
    - *Migration 006 is the important production sync: it currently contains all 68 users and 68 employee records from the offline store and is safe to rerun because it upserts by ID.*
 5. Do not rely on `supabase/seed.sql` alone for production staff data. It contains only the small demo dataset; migration 006 is the authoritative staff seed.
 6. Verify the online staff count in the SQL Editor:

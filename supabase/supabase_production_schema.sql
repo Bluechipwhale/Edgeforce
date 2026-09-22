@@ -595,6 +595,18 @@ INSERT INTO public.work_locations (id, company_id, name, location_type, address,
 (3, 1, 'Abuja Central Hub', 'Branch', 'Plot 44 Ahmadu Bello Way, Central Area', 'FCT Abuja', 'Abuja', 9.0765000, 7.3986000, 150, 150, 'active')
 ON CONFLICT (id) DO NOTHING;
 
+INSERT INTO public.work_locations (id, company_id, name, location_type, address, state, lga, city, latitude, longitude, geofence_radius, geofence_radius_meters, status)
+SELECT 4, 1, 'Head Officer', 'Office', '15 Atiba Osborne Mende Maryland Lagos', 'Lagos', 'Maryland', 'Lagos', 6.3418700, 3.2231000, 150, 150, 'active'
+WHERE NOT EXISTS (
+    SELECT 1 FROM public.work_locations WHERE company_id = 1 AND name = 'Head Officer'
+);
+
+INSERT INTO public.work_locations (id, company_id, name, location_type, address, state, lga, city, latitude, longitude, geofence_radius, geofence_radius_meters, status)
+SELECT 5, 1, 'Ogba Office', 'Office', '9 Emmanuel Olorunfemi street off college road Ogba', 'Lagos', 'Ikeja', 'Lagos', 6.6381454, 3.3311149, 200, 200, 'active'
+WHERE NOT EXISTS (
+    SELECT 1 FROM public.work_locations WHERE company_id = 1 AND name = 'Ogba Office'
+);
+
 INSERT INTO public.employee_location_assignments (company_id, employee_id, location_id, assignment_type, is_primary, is_active) VALUES
 (1, 1, 1, 'primary', TRUE, TRUE),
 (1, 2, 1, 'primary', TRUE, TRUE),
